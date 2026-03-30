@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>  
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <style>
-        /* === LIGHT THEME OVERRIDES === */
         body { transition: background 0.5s ease, color 0.5s ease; }
         .card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease; }
         
@@ -22,50 +21,117 @@
             --primary-dark: #004499;
             --primary-glow: rgba(0, 102, 204, 0.15);
             --accent: #0284c7;
-            --bg-deep: #f4f7fb; /* Clean academic gray-blue */
+            --bg-deep: #f8fafc;
             --bg-space: #ffffff;
-            --surface: rgba(255, 255, 255, 1);
-            --surface-elevated: #ffffff;
+            --surface: #ffffff; 
+            --surface-elevated: #f8fafc;
             --text-main: #0f172a;
-            --text-dim: #334155;
-            --text-tertiary: #64748b;
-            --border: rgba(0, 0, 0, 0.1);
+            --text-dim: #2a2828;
+            --text-tertiary: #000000e6;
+            --border: rgba(85, 93, 117, 0.25); 
             --border-hover: rgba(0, 102, 204, 0.3);
             --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             --shadow-glow: 0 10px 25px rgba(0, 102, 204, 0.15);
+            background-color: var(--bg-deep);
+            position: relative;
+        }
+      body.light-theme::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background-image: url("https://raw.githubusercontent.com/shibom-lang/projects/main/doodle.png");
+    background-repeat: repeat;
+    background-size: 300px;
+
+    opacity: 0.25;
+filter: grayscale(100%) contrast(0.9) brightness(1.12);
+
+    z-index: -1;
+    pointer-events: none;
+}
+        body.light-theme .space-bg { display: none !important; }
+
+        body.light-theme header {
+            background: var(--primary-dark) !important;
+            border-bottom: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        
+        body.light-theme .logo,
+        body.light-theme .logo span,
+        body.light-theme .college-name-en,
+        body.light-theme .college-name-as {
+            color: #ffffff !important;
+            text-shadow: none !important;
         }
 
-        /* Hide the stars and space background in daytime */
-        body.light-theme .space-bg { display: none; }
-        
-        /* Light mode specific header and card fixes */
-        body.light-theme header { 
-            background: rgba(255, 255, 255, 0.85); 
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        body.light-theme .nav-link {
+            color: rgba(255,255,255,0.85) !important;
         }
-        
-        body.light-theme .card { box-shadow: var(--shadow); }
-        
+        body.light-theme .nav-link:hover, 
+        body.light-theme .nav-link.active {
+            color: #FFD700 !important; 
+        }
+
+        body.light-theme .traffic-text,
+        body.light-theme #live-ticker-text,
+        body.light-theme .clock-text,
+        body.light-theme .clock-time {
+            color: #ffffff !important;
+        }
+
+        body.light-theme .card { box-shadow: var(--shadow); background: var(--surface) !important; }
         body.light-theme input, body.light-theme select, body.light-theme textarea {
-            background: #ffffff;
-            color: var(--text-main);
-            border: 1px solid #cbd5e1;
+            background: #ffffff !important;
+            color: var(--text-main) !important;
+            border: 1px solid #cbd5e1 !important;
         }
 
-        /* Force hardcoded white text to turn dark in light mode */
-        body.light-theme [style*="color: white"],
-        body.light-theme [style*="color: #fff"],
-        body.light-theme [style*="color: #ffffff"] {
+
+        body.light-theme main [style*="color: white"],
+        body.light-theme main [style*="color: #fff"],
+        body.light-theme main [style*="color: #ffffff"] {
             color: var(--text-main) !important;
         }
         
-        /* Fix the gradient text on the homepage hero for light mode */
+        body.light-theme main h1,
+        body.light-theme main h2,
+        body.light-theme main h3:not(.swiper-slide h3), 
+        body.light-theme main h4,
+        body.light-theme main h5,
+        body.light-theme main h6 {
+            color: var(--text-main) !important;
+        }
         body.light-theme .hero h1 {
-            background: linear-gradient(to right, #004499, #0284c7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: none;
+            background: none !important;
+            -webkit-text-fill-color: var(--text-main) !important;
+            color: var(--text-main) !important;
+            text-shadow: none !important;
+        }
+        body.light-theme main h2 {
+            text-shadow: none !important;
+            color: var(--text-main) !important;
+        }
+
+      
+        body.light-theme main article.card h1, 
+        body.light-theme main article.card header strong { 
+            color: var(--surface) !important; 
+        }
+        body.light-theme main article.card header div[style*="border-radius: 50%"] { 
+            color: #ffffff !important; 
+        }
+        body.light-theme main article.card figure { 
+            background: #ffffff !important; 
+            border: 1px solid #cbd5e1 !important; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important; 
+        }
+        body.light-theme main article.card header div[style*="line-height: 1.4;"] {
+            color: #64748b !important; 
         }
         /* === PROFESSIONAL THEME === */
         :root {
@@ -77,7 +143,7 @@
             --accent-glow: rgba(14, 165, 233, 0.4);
             --success: #10b981;
             --warning: #f59e0b;
-            --tartiary: #FFD700;
+            --tertiary: #FFD700;
             --error: #ef4444;
             --bg-deep: #050810; 
             --bg-space: #0a0e1a;
@@ -114,7 +180,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: #0a0e1a; /* Matches your space theme */
+            background: #0a0e1a; 
             backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(0, 136, 255, 0.3);
             padding: 10px 0;
@@ -361,7 +427,7 @@
         .font-bold { font-weight: 700; }
 
         /* === HEADER === */
-        header {
+        body:not(.light-theme) header {
             background: rgba(10, 14, 26, 0.7);
             backdrop-filter: blur(16px) saturate(180%);
             border-bottom: 1px solid var(--border);
@@ -846,6 +912,7 @@
         ::-webkit-scrollbar-track { background: var(--bg-space); }
         ::-webkit-scrollbar-thumb { background: var(--secondary); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        
     </style>
 </head>
 
@@ -879,10 +946,10 @@
         
         <div style="display: flex; align-items: center; gap: 8px;">
             <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; animation: pulse-green 2s infinite;"></div>
-            <span style="color: var(--accent);">Live Campus Traffic: <strong id="activeVisitors" style="color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5);">--</strong> Online</span>
+            <span class="traffic-text">Live Campus Traffic: <strong id="activeVisitors" style="color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5);">--</strong> Online</span>
         </div>
 
-        <div id="liveClock" style="color: var(--text-dim); letter-spacing: 0.05em; font-weight: 500;">
+        <div id="liveClock" class="clock-text">
             Initializing Time Protocol...
         </div>
     </div>
@@ -898,7 +965,6 @@
         <marquee id="live-ticker-text" style="color: var(--text-main); font-size: 0.9rem; margin-left: 15px; font-weight: 500;" scrollamount="5">
             Loading live updates...
         </marquee>
-        </div>
         <div class="header-container container flex justify-between items-center">
             <div class="college-branding" style="display: flex; align-items: center; gap: 15px;">
                 <img class="college-logo" src="https://aryavidyapeeth.webdcl.com/images/logo.png" alt="College logo" height="55px" width="55px" style="filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));">
@@ -1104,7 +1170,7 @@
                         <div class="stat-value">120+</div>
                         <div class="stat-label">Students</div>
                     </div>
-                    <div class="card stat-card" style="border-bottom: 3px solid var(--tartiary);">
+                    <div class="card stat-card" style="border-bottom: 3px solid var(--tertiary);">
                         <div class="stat-value">3+</div>
                         <div class="stat-label">Lab Facilities</div>
                     </div>
@@ -1129,7 +1195,7 @@
                         <div class="card-header"><span>📚</span> <span>Academic Excellence</span></div>
                         <div class="card-body">
                             <p>Undergraduate programs built for theoretical mastery and lab skills. See our students excelling in IIT JAM, CUET, and NCC.</p>
-                            <span style="display:inline-block; margin-top:10px; color:var(--tartiary); font-size:0.85rem; font-weight:bold;">👉 Student Portfolio</span>
+                            <span style="display:inline-block; margin-top:10px; color:var(--tertiary); font-size:0.85rem; font-weight:bold;">👉 Student Portfolio</span>
                         </div>
                     </div>
                     <div class="card" style="cursor: pointer;" onclick="openAchievementFeed('activity', '🌟 Student Activities')">
@@ -1603,7 +1669,7 @@
                                  <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
                                   <label style="display: block; color: var(--text-main); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;"> 
                                  📊 SEO Infographic 
-                                  <span style="color: var(--tartiary); font-size: 0.8rem; font-weight: normal; margin-left: 8px;">(Auto-inserts into the middle of your text)</span>
+                                  <span style="color: var(--tertiary); font-size: 0.8rem; font-weight: normal; margin-left: 8px;">(Auto-inserts into the middle of your text)</span>
                                </label>
         
                                <div style="position: relative; border: 2px dashed rgba(0, 136, 255, 0.3); border-radius: 12px; background: rgba(0, 136, 255, 0.02); padding: 2rem 1rem; text-align: center; transition: all 0.3s ease; cursor: pointer; overflow: hidden;" 
@@ -1810,7 +1876,7 @@
                            <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
                         <label style="display: block; color: var(--text-main); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
                       📊 SEO Infographic 
-                   <span style="color: var(--tartiary); font-size: 0.8rem; font-weight: normal; margin-left: 8px;">(Auto-inserts into the middle of your text)</span>
+                   <span style="color: var(--tertiary); font-size: 0.8rem; font-weight: normal; margin-left: 8px;">(Auto-inserts into the middle of your text)</span>
                             </label>
         
                       <div style="position: relative; border: 2px dashed rgba(0, 136, 255, 0.3); border-radius: 12px; background: rgba(0, 136, 255, 0.02); padding: 2rem 1rem; text-align: center; transition: all 0.3s ease; cursor: pointer; overflow: hidden;" 
@@ -2969,8 +3035,6 @@ async function handleAchievement(e) {
         if (res.ok) {
             alert("✅ Achievement Published Successfully!");
             form.reset();
-            
-            // Immediately jump to the feed they just posted to!
             const pageTitle = category === 'academic' 
                 ? ' Academic Programs & Excellence' 
                 : 'Student Activities & Achievements';
@@ -2984,7 +3048,7 @@ async function handleAchievement(e) {
 }
     // ⏱️ LIVE CLOCK & TRAFFIC LOGIC
 
-    function startSystemStatus() {
+         function startSystemStatus() {
         const clockElement = document.getElementById('liveClock');
         if (clockElement) {
             setInterval(() => {
@@ -2992,7 +3056,7 @@ async function handleAchievement(e) {
                 const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
                 const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 
-                clockElement.innerHTML = `<span style="color: var(--primary);"></span> ${dateStr} &nbsp;&nbsp;|&nbsp;&nbsp; <span style="color: var(--tartiary);">⏱️</span> <span style="color: #fff;">${timeStr}</span>`;
+                clockElement.innerHTML = `<span style="color: var(--primary);"></span> ${dateStr} &nbsp;&nbsp;|&nbsp;&nbsp; <span style="color: var(--tertiary);">⏱️</span> <span class="clock-time">${timeStr}</span>`;
             }, 1000); 
         }
         // 2. REAL-TIME WEBSOCKET VISITOR TRACKING
@@ -3019,7 +3083,8 @@ async function handleAchievement(e) {
         startSystemStatus();
         loadLiveTicker(); 
         initializeTheme();
-    });   
+    }); 
+     
     </script>
 </body>
 </html>
