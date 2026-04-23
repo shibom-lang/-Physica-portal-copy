@@ -844,69 +844,54 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         /* === RESPONSIVE DESIGN === */
         @media (max-width: 768px) { 
-            /* 1. Hide Marquee Ticker on Mobile to prevent overlap */
-            header marquee { 
-                display: none !important; 
-            }
+            /* 1. Hide Marquee on Mobile to clear space */
+            header marquee { display: none !important; }
 
-            /* 2. Stack Clock & Live Traffic with better spacing */
+            /* 2. Disorganized Top Bar Fix (Clock & Traffic) */
             header + div[style*="display: flex"] {
-                flex-direction: column !important;
-                padding: 12px 0 !important;
-                gap: 6px !important;
-                background: #000b1e !important; /* Solid dark background for clarity */
-            }
-
-            .traffic-text, .clock-text, #activeVisitors, .clock-time {
+                flex-direction: row !important; /* Keep it horizontal but smaller */
+                justify-content: space-between !important;
+                padding: 10px 15px !important;
+                background: #000a1e !important;
                 font-size: 0.65rem !important;
-                width: 100% !important;
-                justify-content: center !important;
-                display: flex !important;
-                text-align: center !important;
             }
+            .traffic-text, .clock-text { width: auto !important; }
 
-            /* 3. Compact Header & Logo Stacking */
+            /* 3. Disorganized Header & Logo */
             header .header-container { 
                 flex-direction: column !important; 
+                padding: 12px 5px !important;
                 gap: 12px !important;
-                padding: 10px 0 !important;
             }
-
-            .college-branding {
-                flex-direction: column !important;
-                text-align: center !important;
-                gap: 8px !important;
-            }
-
+            .college-branding { flex-direction: column !important; gap: 5px !important; }
             .college-logo { height: 45px !important; width: 45px !important; }
-            .college-name-en { font-size: 0.85rem !important; }
+            .college-name-en { font-size: 0.85rem !important; line-height: 1.1 !important; }
             .college-name-as { font-size: 0.75rem !important; }
 
-            /* 4. Organized Navigation Grid (3 links per row) */
+            /* 4. Navigation Link Grid (Critical Fix) */
             nav ul {
                 display: grid !important;
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 8px !important;
-                padding: 5px 10px 15px !important;
+                grid-template-columns: repeat(3, 1fr) !important; /* Forces 3 columns */
+                gap: 6px !important;
+                padding: 0 10px 15px !important;
                 width: 100% !important;
             }
-
             .nav-link { 
                 margin: 0 !important; 
                 font-size: 0.65rem !important; 
                 text-align: center !important;
-                padding: 6px 2px !important;
+                padding: 6px 0 !important;
                 border: 1px solid rgba(255,255,255,0.1) !important;
                 border-radius: 4px !important;
-                text-transform: uppercase !important;
+                display: block !important;
             }
 
-            /* 5. Scaled Content for Hero Section */
+            /* 5. Hero & Content Scaling */
             .hero { padding: 2rem 0 1rem !important; }
             .hero h1 { 
                 font-size: 1.6rem !important; 
                 line-height: 1.2 !important;
-                word-wrap: break-word !important;
+                padding: 0 10px !important;
             }
             .hero p { font-size: 0.85rem !important; padding: 0 15px !important; }
             
@@ -916,9 +901,16 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             .sidebar { width: 100% !important; }
             .grid-2 { grid-template-columns: 1fr !important; }
             
-            .heroSwiper { height: 200px !important; border-radius: 10px !important; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-            .stat-value { font-size: 1.4rem !important; }
+            .heroSwiper { height: 220px !important; margin-bottom: 2rem !important; }
+            
+            /* 6. Stats Grid Scaling */
+            .stats-grid { 
+                grid-template-columns: repeat(2, 1fr) !important; 
+                gap: 10px !important; 
+                padding: 0 10px !important;
+            }
+            .stat-value { font-size: 1.5rem !important; }
+            .stat-label { font-size: 0.6rem !important; }
         
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
