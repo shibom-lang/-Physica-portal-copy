@@ -842,27 +842,33 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             opacity: 1; 
             visibility: visible; 
         }
-        
-        /* === RESPONSIVE FIXES === */
+        /* === RESPONSIVE DESIGN === */
         @media (max-width: 768px) { 
-            /* 1. Stack Clock & Live Traffic */
-            header + div, 
-            div[style*="justify-content: space-between"] {
+            /* 1. Hide Marquee Ticker on Mobile to prevent overlap */
+            header marquee { 
+                display: none !important; 
+            }
+
+            /* 2. Stack Clock & Live Traffic with better spacing */
+            header + div[style*="display: flex"] {
                 flex-direction: column !important;
-                gap: 8px !important;
-                padding: 10px 5% !important;
-                text-align: center !important;
+                padding: 12px 0 !important;
+                gap: 6px !important;
+                background: #000b1e !important; /* Solid dark background for clarity */
             }
 
             .traffic-text, .clock-text, #activeVisitors, .clock-time {
-                font-size: 0.75rem !important;
+                font-size: 0.65rem !important;
+                width: 100% !important;
                 justify-content: center !important;
+                display: flex !important;
+                text-align: center !important;
             }
 
-            /* 2. Unified Header Stacking */
+            /* 3. Compact Header & Logo Stacking */
             header .header-container { 
                 flex-direction: column !important; 
-                gap: 15px !important;
+                gap: 12px !important;
                 padding: 10px 0 !important;
             }
 
@@ -872,45 +878,47 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
                 gap: 8px !important;
             }
 
-            .college-name-en { font-size: 0.95rem !important; }
-            .college-name-as { font-size: 0.8rem !important; }
+            .college-logo { height: 45px !important; width: 45px !important; }
+            .college-name-en { font-size: 0.85rem !important; }
+            .college-name-as { font-size: 0.75rem !important; }
 
-            /* 3. Navigation & Logo Centering */
-            .dept-nav-area {
-                align-items: center !important;
-                width: 100%;
-            }
-
-            nav ul { 
-                flex-wrap: wrap !important; 
-                justify-content: center !important; 
-                gap: 10px !important;
+            /* 4. Organized Navigation Grid (3 links per row) */
+            nav ul {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+                padding: 5px 10px 15px !important;
+                width: 100% !important;
             }
 
             .nav-link { 
-                margin-left: 0 !important; 
-                font-size: 0.8rem !important; 
+                margin: 0 !important; 
+                font-size: 0.65rem !important; 
+                text-align: center !important;
+                padding: 6px 2px !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                border-radius: 4px !important;
+                text-transform: uppercase !important;
             }
-        
-        /* === LAYOUT & CONTENT FIXES === */
-        .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
-        .dashboard-layout { flex-direction: column; gap: 1rem; } 
-        .sidebar { width: 100%; }
-        .grid-2 { grid-template-columns: 1fr; }
-        .card { padding: 1.25rem; } 
-        
-        .hero { padding: 3rem 0 1.5rem; }
-        .hero h1 { font-size: 2rem; word-wrap: break-word; line-height: 1.2; }
-        .hero p { font-size: 1rem; padding: 0 10px; }
-        
-        .heroSwiper { 
-            height: 250px !important; 
-            border-radius: 10px !important;
-            margin-top: 0 !important;
-        }
 
-        .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        .stat-value { font-size: 1.8rem; }
+            /* 5. Scaled Content for Hero Section */
+            .hero { padding: 2rem 0 1rem !important; }
+            .hero h1 { 
+                font-size: 1.6rem !important; 
+                line-height: 1.2 !important;
+                word-wrap: break-word !important;
+            }
+            .hero p { font-size: 0.85rem !important; padding: 0 15px !important; }
+            
+            /* 6. Dashboard & Grid Layouts */
+            .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
+            .dashboard-layout { flex-direction: column !important; } 
+            .sidebar { width: 100% !important; }
+            .grid-2 { grid-template-columns: 1fr !important; }
+            
+            .heroSwiper { height: 200px !important; border-radius: 10px !important; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            .stat-value { font-size: 1.4rem !important; }
         
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
