@@ -844,56 +844,59 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         /* === RESPONSIVE DESIGN === */
         @media (max-width: 768px) { 
-            /* 1. Hide Marquee on Mobile to clear space */
+            /* 1. Simplify Top Bar (Glassmorphism look) */
+            header + div[style*="display: flex"] {
+                flex-direction: row !important;
+                justify-content: space-around !important;
+                padding: 12px 10px !important;
+                background: rgba(0, 10, 30, 0.98) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            }
+            .traffic-text, .clock-text { 
+                font-size: 0.65rem !important; 
+                letter-spacing: 0.02em !important;
+            }
             header marquee { display: none !important; }
 
-            /* 2. Disorganized Top Bar Fix (Clock & Traffic) */
-            header + div[style*="display: flex"] {
-                flex-direction: row !important; /* Keep it horizontal but smaller */
-                justify-content: space-between !important;
-                padding: 10px 15px !important;
-                background: #000a1e !important;
-                font-size: 0.65rem !important;
-            }
-            .traffic-text, .clock-text { width: auto !important; }
-
-            /* 3. Disorganized Header & Logo */
+            /* 2. Unified Header Branding */
             header .header-container { 
                 flex-direction: column !important; 
-                padding: 12px 5px !important;
-                gap: 12px !important;
+                padding: 15px 10px !important;
+                gap: 15px !important;
             }
-            .college-branding { flex-direction: column !important; gap: 5px !important; }
-            .college-logo { height: 45px !important; width: 45px !important; }
-            .college-name-en { font-size: 0.85rem !important; line-height: 1.1 !important; }
-            .college-name-as { font-size: 0.75rem !important; }
+            .college-logo { height: 50px !important; width: 50px !important; }
+            .college-name-en { font-size: 0.9rem !important; }
+            .logo { font-size: 1.4rem !important; }
 
-            /* 4. Navigation Link Grid (Critical Fix) */
+            /* 3. Modern "Island" Navigation (3 columns, no borders) */
             nav ul {
                 display: grid !important;
-                grid-template-columns: repeat(3, 1fr) !important; /* Forces 3 columns */
-                gap: 6px !important;
-                padding: 0 10px 15px !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 10px !important;
+                padding: 5px 15px 20px !important;
                 width: 100% !important;
             }
             .nav-link { 
                 margin: 0 !important; 
                 font-size: 0.65rem !important; 
+                font-weight: 600 !important;
                 text-align: center !important;
-                padding: 6px 0 !important;
-                border: 1px solid rgba(255,255,255,0.1) !important;
-                border-radius: 4px !important;
-                display: block !important;
+                padding: 10px 5px !important;
+                background: rgba(255, 255, 255, 0.03) !important; /* Subtle box */
+                border-radius: 8px !important;
+                border: none !important; /* Removed messy borders */
+                color: rgba(255, 255, 255, 0.7) !important;
+            }
+            .nav-link.active { 
+                background: var(--primary) !important; 
+                color: white !important;
+                box-shadow: 0 4px 10px rgba(0, 136, 255, 0.3) !important;
             }
 
-            /* 5. Hero & Content Scaling */
-            .hero { padding: 2rem 0 1rem !important; }
-            .hero h1 { 
-                font-size: 1.6rem !important; 
-                line-height: 1.2 !important;
-                padding: 0 10px !important;
-            }
-            .hero p { font-size: 0.85rem !important; padding: 0 15px !important; }
+            /* 4. Content Scaling */
+            .hero { padding: 3rem 0 1.5rem !important; }
+            .hero h1 { font-size: 1.8rem !important; padding: 0 20px !important; }
+            .hero p { font-size: 0.95rem !important; padding: 0 20px !important; }
             
             /* 6. Dashboard & Grid Layouts */
             .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
@@ -901,16 +904,15 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             .sidebar { width: 100% !important; }
             .grid-2 { grid-template-columns: 1fr !important; }
             
-            .heroSwiper { height: 220px !important; margin-bottom: 2rem !important; }
+            .heroSwiper { height: 240px !important; border-radius: 12px !important; margin: 0 15px 2rem !important; width: calc(100% - 30px) !important; }
             
-            /* 6. Stats Grid Scaling */
+            /* 5. Stats Cards (Full Width) */
             .stats-grid { 
-                grid-template-columns: repeat(2, 1fr) !important; 
-                gap: 10px !important; 
-                padding: 0 10px !important;
+                grid-template-columns: 1fr !important; /* Stack them for readability */
+                gap: 12px !important; 
+                padding: 0 15px !important;
             }
-            .stat-value { font-size: 1.5rem !important; }
-            .stat-label { font-size: 0.6rem !important; }
+            .stat-card { padding: 1.25rem !important; }
         
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
