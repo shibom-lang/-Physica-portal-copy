@@ -844,44 +844,53 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         
         /* === RESPONSIVE FIXES === */
-       /* === RESPONSIVE FIXES === */
-       @media (max-width: 768px) { 
-        /* === UNIFIED HEADER MOBILE FIX === */
-        header .header-container { 
-            flex-direction: column !important; 
-            text-align: center !important; 
-            gap: 1rem; 
-            padding-bottom: 0.5rem; 
-        }
+        @media (max-width: 768px) { 
+            /* 1. Stack Clock & Live Traffic */
+            header + div, 
+            div[style*="justify-content: space-between"] {
+                flex-direction: column !important;
+                gap: 8px !important;
+                padding: 10px 5% !important;
+                text-align: center !important;
+            }
 
-        .college-branding {
-            flex-direction: column;
-            gap: 8px !important;
-        }
+            .traffic-text, .clock-text, #activeVisitors, .clock-time {
+                font-size: 0.75rem !important;
+                justify-content: center !important;
+            }
 
-        .college-names {
-            text-align: center !important;
-        }
+            /* 2. Unified Header Stacking */
+            header .header-container { 
+                flex-direction: column !important; 
+                gap: 15px !important;
+                padding: 10px 0 !important;
+            }
 
-        .dept-nav-area {
-            align-items: center !important;
-            width: 100%;
-        }
+            .college-branding {
+                flex-direction: column !important;
+                text-align: center !important;
+                gap: 8px !important;
+            }
 
-        nav ul { 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 8px; 
-            padding: 0; 
-            margin-top: 10px;
-        }
+            .college-name-en { font-size: 0.95rem !important; }
+            .college-name-as { font-size: 0.8rem !important; }
 
-        .nav-link { 
-            margin-left: 0; 
-            margin: 0 4px; 
-            font-size: 0.8rem; 
-            padding: 0.3rem 0; 
-        }
+            /* 3. Navigation & Logo Centering */
+            .dept-nav-area {
+                align-items: center !important;
+                width: 100%;
+            }
+
+            nav ul { 
+                flex-wrap: wrap !important; 
+                justify-content: center !important; 
+                gap: 10px !important;
+            }
+
+            .nav-link { 
+                margin-left: 0 !important; 
+                font-size: 0.8rem !important; 
+            }
         
         /* === LAYOUT & CONTENT FIXES === */
         .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
