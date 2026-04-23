@@ -913,11 +913,27 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
                 padding: 0 15px !important;
             }
             .stat-card { padding: 1.25rem !important; }
+            header + div[style*="display: flex"] {
+                padding: 12px 20px !important; /* Added side padding */
+            }
+
+            /* 2. Improve Stat Value Visibility */
+            .stat-value { 
+                font-size: 1.8rem !important; 
+                margin-bottom: 2px !important;
+            }
+
+            /* 3. Ensure Stat Labels are readable */
+            .stat-label {
+                font-size: 0.7rem !important;
+                color: var(--text-dim) !important;
+                letter-spacing: 0.05em !important;}
         
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
         .mascot-bubble { width: 160px; right: 0; font-size: 0.8rem; padding: 0.6rem; }
     }
+
         /* === CUSTOM SCROLLBAR === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-space); }
