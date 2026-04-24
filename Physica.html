@@ -843,75 +843,70 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             visibility: visible; 
         }
         /* === RESPONSIVE DESIGN === */
-        @media (max-width: 768px) { 
-            /* 1. Fix Top Bar Overlap */
-            header marquee { display: none !important; }
-            
-            /* Target the top bar container precisely */
-            div[style*="justify-content: space-between"][style*="z-index: 1000"] {
-                flex-direction: column !important;
-                padding: 10px 0 !important;
-                gap: 5px !important;
-            }
-            .traffic-text, .clock-text { 
-                font-size: 0.7rem !important; 
-                width: 100% !important;
-                justify-content: center !important;
-                display: flex !important;
-                text-align: center !important;
-            }
+       /* === 📱 FINAL MOBILE UX POLISH === */
+       @media (max-width: 768px) { 
+        /* 1. Resolve Top Bar Collision */
+        div[style*="justify-content: space-between"][style*="z-index: 1000"] {
+            flex-direction: column !important; /* Forces vertical stack */
+            padding: 12px 10px !important;
+            gap: 8px !important;
+            height: auto !important;
+        }
 
-            /* 2. Center the Navigation Grid */
-            header .header-container { 
-                flex-direction: column !important; 
-                gap: 15px !important;
-                padding: 15px 0 !important;
-            }
+        .traffic-text, .clock-text { 
+            font-size: 0.7rem !important; 
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            text-align: center !important;
+        }
 
-            .dept-nav-area {
-                align-items: center !important; /* Forces the grid to the center */
-                width: 100% !important;
-            }
+        /* 2. Center Branding & Navigation */
+        header .header-container { 
+            flex-direction: column !important; 
+            gap: 15px !important;
+            padding: 15px 0 !important;
+        }
 
-            nav ul {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 8px !important;
-                padding: 0 15px 15px !important;
-                width: 100% !important;
-            }
+        .dept-nav-area {
+            align-items: center !important; /* Centers logo and menu */
+            width: 100% !important;
+        }
 
-            .nav-link { 
-                margin: 0 !important; 
-                font-size: 0.65rem !important; 
-                padding: 8px 2px !important;
-                background: rgba(255, 255, 255, 0.05) !important;
-                border-radius: 6px !important;
-                border: none !important;
-                text-align: center !important;
-            }
-            .nav-link.active { 
-                background: var(--primary) !important; 
-                color: white !important;
-                box-shadow: 0 4px 10px rgba(0, 136, 255, 0.3) !important;
-            }
+        /* 3. Balanced Navigation Grid */
+        nav ul {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 10px !important;
+            padding: 5px 15px 20px !important;
+            width: 100% !important;
+        }
 
-            /* 4. Content Scaling */
-            .hero h1 { font-size: 1.8rem !important; padding: 0 10px !important; line-height: 1.2 !important; }
-            .hero p { font-size: 0.95rem !important; }
-            .heroSwiper { height: 220px !important; width: 94% !important; margin: 0 auto 2rem !important; }
-            
-            .stats-grid { 
-                grid-template-columns: repeat(2, 1fr) !important; 
-                gap: 10px !important; 
-                padding: 0 10px !important;
-            }
-            .stat-value { font-size: 1.6rem !important; }
-            .stat-label { font-size: 0.6rem !important; }
+        .nav-link { 
+            margin: 0 !important; 
+            font-size: 0.65rem !important; 
+            padding: 10px 2px !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-radius: 8px !important;
+            border: none !important;
+            text-align: center !important;
+        }
 
-            /* 4. Layout Stability */
-            .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
-           
+        /* 4. Hero & Content Scaling */
+        .hero h1 { font-size: 1.7rem !important; padding: 0 15px !important; line-height: 1.2 !important; }
+        .heroSwiper { height: 230px !important; width: 94% !important; margin: 0 auto 2.5rem !important; }
+        
+        .stats-grid { 
+            grid-template-columns: repeat(2, 1fr) !important; 
+            gap: 12px !important; 
+            padding: 0 15px !important;
+        }
+        .stat-value { font-size: 1.6rem !important; }
+        
+        /* General container fix */
+        .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
+        header marquee { display: none !important; }
+               
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
         .mascot-bubble { width: 160px; right: 0; font-size: 0.8rem; padding: 0.6rem; }
