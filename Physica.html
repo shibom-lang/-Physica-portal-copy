@@ -845,79 +845,104 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         /* === RESPONSIVE DESIGN === */
        /* === 📱 FINAL MOBILE UX POLISH === */
        /* === 📱 FINAL MOBILE STACKING FIX === */
-       @media (max-width: 768px) { 
-        /* 1. Precise Top Bar Separation */
-        div[style*="justify-content: space-between"][style*="z-index: 1000"] {
-            flex-direction: column !important;
-            padding: 15px 10px !important;
-            gap: 10px !important;
-            height: auto !important;
-            min-height: 80px !important; /* Forces enough space for both lines */
-        }
+       @media (max-width:768px){
 
-        .traffic-text, .clock-text { 
-            font-size: 0.75rem !important; 
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            text-align: center !important;
-            line-height: 1.2 !important;
+        /* Clean body */
+        body{
+            background:#0d47a1;
+            overflow-x:hidden;
         }
-
-        /* 2. Unified Header Centering */
-        header .header-container { 
-            flex-direction: column !important; 
-            gap: 15px !important;
-            padding: 15px 0 !important;
-        }
-
-        .dept-nav-area {
-            align-items: center !important;
-            width: 100% !important;
-        }
-
-        /* 3. Modern Island Grid with Active State */
-        nav ul {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 8px !important;
-            padding: 0 15px 15px !important;
-            width: 100% !important;
-        }
-
-        .nav-link { 
-            margin: 0 !important; 
-            font-size: 0.65rem !important; 
-            padding: 10px 2px !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-radius: 8px !important;
-            border: none !important;
-            text-align: center !important;
-            display: block !important;
-        }
-
-        /* Blue highlight for the current page */
-        .nav-link.active { 
-            background: var(--primary) !important; 
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(0, 136, 255, 0.4) !important;
-            font-weight: 700 !important;
-        }
-
-        /* 4. Content Scaling */
-        .hero h1 { font-size: 1.7rem !important; padding: 0 15px !important; }
-        .heroSwiper { height: 240px !important; width: 94% !important; margin: 0 auto 2rem !important; }
-        .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; padding: 0 15px !important; }
-        .stat-value { font-size: 1.6rem !important; }
         
-        /* Clean up */
-        header marquee { display: none !important; }
-        .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
-               
-        .astronaut-container { bottom: 15px; right: 15px; }
-        .astronaut-img { width: 60px; }
-        .mascot-bubble { width: 160px; right: 0; font-size: 0.8rem; padding: 0.6rem; }
-    }
+        /* Remove top traffic bar */
+        body > div:first-of-type{
+            display:none !important;
+        }
+        
+        /* Header */
+        header{
+            padding:12px 15px !important;
+            position:sticky;
+            top:0;
+            background:#0b3d91 !important;
+            border:none !important;
+        }
+        
+        /* Stack header nicely */
+        .header-container{
+            display:flex !important;
+            flex-direction:row !important;
+            justify-content:space-between !important;
+            align-items:center !important;
+            gap:10px;
+        }
+        
+        /* College names smaller */
+        .college-name-en{
+            font-size:14px !important;
+        }
+        
+        .college-name-as{
+            font-size:11px !important;
+        }
+        
+        /* Hide full nav */
+        nav{
+            display:none !important;
+        }
+        
+        /* Hero */
+        .hero{
+            padding:30px 15px !important;
+            text-align:center;
+        }
+        
+        .hero h1{
+            font-size:32px !important;
+            line-height:1.1;
+        }
+        
+        .hero h2{
+            font-size:14px !important;
+        }
+        
+        .hero p{
+            font-size:15px !important;
+        }
+        
+        /* Slider */
+        .heroSwiper{
+            height:250px !important;
+            border-radius:0 !important;
+            width:100% !important;
+        }
+        
+        /* Stats */
+        .stats-grid{
+            grid-template-columns:1fr 1fr !important;
+            gap:10px;
+            padding:15px;
+        }
+        
+        /* Cards */
+        .grid-2{
+            grid-template-columns:1fr !important;
+        }
+        
+        .card{
+            border-radius:14px;
+            padding:18px !important;
+        }
+        
+        /* Hide mascot */
+        .astronaut-container{
+            display:none !important;
+        }
+        
+        /* Reduce background effects */
+        .space-bg{
+            opacity:0.2;
+        }
+        }
 
         /* === CUSTOM SCROLLBAR === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
