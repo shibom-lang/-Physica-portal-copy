@@ -844,24 +844,27 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         /* === RESPONSIVE DESIGN === */
        /* === 📱 FINAL MOBILE UX POLISH === */
+       /* === 📱 FINAL MOBILE STACKING FIX === */
        @media (max-width: 768px) { 
-        /* 1. Resolve Top Bar Collision */
+        /* 1. Precise Top Bar Separation */
         div[style*="justify-content: space-between"][style*="z-index: 1000"] {
-            flex-direction: column !important; /* Forces vertical stack */
-            padding: 12px 10px !important;
-            gap: 8px !important;
+            flex-direction: column !important;
+            padding: 15px 10px !important;
+            gap: 10px !important;
             height: auto !important;
+            min-height: 80px !important; /* Forces enough space for both lines */
         }
 
         .traffic-text, .clock-text { 
-            font-size: 0.7rem !important; 
+            font-size: 0.75rem !important; 
             width: 100% !important;
             display: flex !important;
             justify-content: center !important;
             text-align: center !important;
+            line-height: 1.2 !important;
         }
 
-        /* 2. Center Branding & Navigation */
+        /* 2. Unified Header Centering */
         header .header-container { 
             flex-direction: column !important; 
             gap: 15px !important;
@@ -869,16 +872,16 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
 
         .dept-nav-area {
-            align-items: center !important; /* Centers logo and menu */
+            align-items: center !important;
             width: 100% !important;
         }
 
-        /* 3. Balanced Navigation Grid */
+        /* 3. Modern Island Grid with Active State */
         nav ul {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 10px !important;
-            padding: 5px 15px 20px !important;
+            gap: 8px !important;
+            padding: 0 15px 15px !important;
             width: 100% !important;
         }
 
@@ -890,22 +893,26 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             border-radius: 8px !important;
             border: none !important;
             text-align: center !important;
+            display: block !important;
         }
 
-        /* 4. Hero & Content Scaling */
-        .hero h1 { font-size: 1.7rem !important; padding: 0 15px !important; line-height: 1.2 !important; }
-        .heroSwiper { height: 230px !important; width: 94% !important; margin: 0 auto 2.5rem !important; }
-        
-        .stats-grid { 
-            grid-template-columns: repeat(2, 1fr) !important; 
-            gap: 12px !important; 
-            padding: 0 15px !important;
+        /* Blue highlight for the current page */
+        .nav-link.active { 
+            background: var(--primary) !important; 
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(0, 136, 255, 0.4) !important;
+            font-weight: 700 !important;
         }
+
+        /* 4. Content Scaling */
+        .hero h1 { font-size: 1.7rem !important; padding: 0 15px !important; }
+        .heroSwiper { height: 240px !important; width: 94% !important; margin: 0 auto 2rem !important; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; padding: 0 15px !important; }
         .stat-value { font-size: 1.6rem !important; }
         
-        /* General container fix */
-        .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
+        /* Clean up */
         header marquee { display: none !important; }
+        .container { width: 100%; padding: 0 1rem; overflow-x: hidden; }
                
         .astronaut-container { bottom: 15px; right: 15px; }
         .astronaut-img { width: 60px; }
