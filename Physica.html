@@ -3137,8 +3137,23 @@ async function handleAchievement(e) {
         startSystemStatus();
         loadLiveTicker(); 
         initializeTheme();
-    }); 
+    });
+        // all your existing JS code...
      
+        window.addEventListener("load", () => {
+          if (window.innerWidth <= 768) {
+            const bubble = document.getElementById("mascotBubble");
+     
+            if (bubble) {
+              bubble.classList.add("show");
+     
+              setTimeout(() => {
+                bubble.classList.remove("show");
+              }, 4000);
+            }
+          }
+        });
+
     </script>
 </body>
 </html>
