@@ -850,34 +850,58 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           overflow-x:hidden;
         }
         
-        /* top bar */
+        /* hide top traffic bar */
         body > div:first-of-type{
+          display:none !important;
+        }
+        
+        /* remove marquee on mobile */
+        #live-ticker-text{
           display:none !important;
         }
         
         /* header */
         header{
-          padding:12px 10px !important;
+          padding:14px 12px !important;
         }
         
         .header-container{
-          flex-direction:column !important;
-          gap:10px !important;
+          flex-direction:column;
+          align-items:center;
+          gap:14px;
           padding:0 !important;
         }
         
+        /* college row */
         .college-branding{
-          width:100%;
           justify-content:center;
+          text-align:center;
+          gap:10px;
         }
         
-        .college-name-en{font-size:13px !important;}
-        .college-name-as{font-size:10px !important;}
+        .college-logo{
+          width:42px !important;
+          height:42px !important;
+        }
         
-        /* logo row */
+        .college-name-en{
+          font-size:12px !important;
+        }
+        
+        .college-name-as{
+          font-size:9px !important;
+        }
+        
+        /* physica row */
         .dept-nav-area{
           width:100%;
           align-items:center !important;
+          gap:10px !important;
+        }
+        
+        /* logo */
+        .logo{
+          font-size:30px !important;
         }
         
         /* nav */
@@ -887,32 +911,39 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         
         nav ul{
           display:grid !important;
-          grid-template-columns:repeat(3,1fr);
-          gap:6px;
+          grid-template-columns:repeat(2,1fr);
+          gap:8px;
           width:100%;
           padding:0;
         }
         
+        nav li{
+          list-style:none;
+        }
+        
         .nav-link{
+          display:block;
+          width:100%;
           margin:0 !important;
-          font-size:11px !important;
-          padding:8px 4px !important;
-          background:rgba(255,255,255,.05);
-          border-radius:8px;
+          padding:10px 6px !important;
+          font-size:12px !important;
+          border-radius:10px;
           text-align:center;
+          background:rgba(255,255,255,.07);
         }
         
         /* hero */
         .hero{
-          padding:30px 12px !important;
+          padding:24px 14px 10px !important;
         }
         
         .hero h1{
-          font-size:28px !important;
+          font-size:24px !important;
         }
         
         .hero h2{
-          font-size:13px !important;
+          font-size:12px !important;
+          margin-bottom:12px !important;
         }
         
         .hero p{
@@ -921,37 +952,42 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         
         /* slider */
         .heroSwiper{
-          width:100% !important;
-          height:220px !important;
-          border-radius:12px !important;
+          height:240px !important;
+          margin-top:12px !important;
+        }
+        
+        .swiper-slide h3{
+          font-size:20px !important;
         }
         
         /* grids */
         .stats-grid,
         .grid-2{
           grid-template-columns:1fr !important;
+          gap:12px !important;
+        }
+        
+        /* cards */
+        .card{
+          padding:16px !important;
         }
         
         /* mascot */
         .astronaut-container{
-          bottom:12px !important;
-          right:12px !important;
-          z-index:999;
+          bottom:10px !important;
+          right:10px !important;
         }
         
         .astronaut-img{
-          width:50px !important;
+          width:48px !important;
         }
         
         .mascot-bubble{
-          width:150px !important;
+          width:145px !important;
           font-size:11px !important;
-          padding:8px !important;
-          margin-bottom:6px !important;
         }
-        
-        }
-
+         }
+    
         /* === CUSTOM SCROLLBAR === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-space); }
