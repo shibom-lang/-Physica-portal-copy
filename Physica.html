@@ -844,122 +844,113 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         /* === RESPONSIVE DESIGN === */
        /* === 📱 FINAL MOBILE UX POLISH === */
-       /* === 📱 FINAL MOBILE STACKING FIX === */
        @media (max-width:768px){
 
-        /* Clean body */
         body{
-            background:#0d47a1;
-            overflow-x:hidden;
+          overflow-x:hidden;
         }
         
-        /* Remove top traffic bar */
+        /* top bar */
         body > div:first-of-type{
-            display:none !important;
+          display:none !important;
         }
         
-        /* Header */
+        /* header */
         header{
-            padding:12px 15px !important;
-            position:sticky;
-            top:0;
-            background:#0b3d91 !important;
-            border:none !important;
+          padding:12px 10px !important;
         }
         
-        /* Stack header nicely */
         .header-container{
-            display:flex !important;
-            flex-direction:row !important;
-            justify-content:space-between !important;
-            align-items:center !important;
-            gap:10px;
+          flex-direction:column !important;
+          gap:10px !important;
+          padding:0 !important;
         }
         
-        /* College names smaller */
-        .college-name-en{
-            font-size:14px !important;
+        .college-branding{
+          width:100%;
+          justify-content:center;
         }
         
-        .college-name-as{
-            font-size:11px !important;
+        .college-name-en{font-size:13px !important;}
+        .college-name-as{font-size:10px !important;}
+        
+        /* logo row */
+        .dept-nav-area{
+          width:100%;
+          align-items:center !important;
         }
         
-        /* Hide full nav */
+        /* nav */
         nav{
-            display:none !important;
+          width:100%;
         }
         
-        /* Hero */
+        nav ul{
+          display:grid !important;
+          grid-template-columns:repeat(3,1fr);
+          gap:6px;
+          width:100%;
+          padding:0;
+        }
+        
+        .nav-link{
+          margin:0 !important;
+          font-size:11px !important;
+          padding:8px 4px !important;
+          background:rgba(255,255,255,.05);
+          border-radius:8px;
+          text-align:center;
+        }
+        
+        /* hero */
         .hero{
-            padding:30px 15px !important;
-            text-align:center;
+          padding:30px 12px !important;
         }
         
         .hero h1{
-            font-size:32px !important;
-            line-height:1.1;
+          font-size:28px !important;
         }
         
         .hero h2{
-            font-size:14px !important;
+          font-size:13px !important;
         }
         
         .hero p{
-            font-size:15px !important;
+          font-size:14px !important;
         }
         
-        /* Slider */
+        /* slider */
         .heroSwiper{
-            height:250px !important;
-            border-radius:0 !important;
-            width:100% !important;
+          width:100% !important;
+          height:220px !important;
+          border-radius:12px !important;
         }
         
-        /* Stats */
-        .stats-grid{
-            grid-template-columns:1fr 1fr !important;
-            gap:10px;
-            padding:15px;
-        }
-        
-        /* Cards */
+        /* grids */
+        .stats-grid,
         .grid-2{
-            grid-template-columns:1fr !important;
+          grid-template-columns:1fr !important;
         }
         
-        .card{
-            border-radius:14px;
-            padding:18px !important;
-        }
-    
+        /* mascot */
         .astronaut-container{
-            bottom:10px !important;
-            right:10px !important;
-            z-index:999;
-          }
-          
-          .astronaut-img{
-            width:52px !important;
-            height:auto;
-          }
-          
-          .mascot-bubble{
-            width:170px !important;
-            font-size:12px !important;
-            line-height:1.4;
-            padding:8px 10px !important;
-            margin-bottom:8px !important;
-            border-radius:12px !important;
-          }
-          
-          /* visible state */
-          .mascot-bubble.show{
-            opacity:1;
-            visibility:visible;
-          }
-          
-          }
+          bottom:12px !important;
+          right:12px !important;
+          z-index:999;
+        }
+        
+        .astronaut-img{
+          width:50px !important;
+        }
+        
+        .mascot-bubble{
+          width:150px !important;
+          font-size:11px !important;
+          padding:8px !important;
+          margin-bottom:6px !important;
+        }
+        
+        }
 
         /* === CUSTOM SCROLLBAR === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -2962,7 +2953,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         } catch (err) { document.getElementById('achievement-loader').innerHTML = "Server Offline"; }
     }
     // ==========================================
-    // 🖼️ TEACHER DASHBOARD: SLIDER MANAGER
+    //  TEACHER DASHBOARD: SLIDER MANAGER
     async function uploadCarouselSlide(e) {
         e.preventDefault();
         const title = document.getElementById('carouselTitle').value;
@@ -2974,7 +2965,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         formData.append('uploaderName', currentUser.name);
 
         try {
-            // 🔴 CHANGED: Now uses the dynamic API_URL
+            // CHANGED: Now uses the dynamic API_URL
             const response = await fetch(`${API_URL}/carousel`, {
                 method: 'POST',
                 body: formData
@@ -2992,12 +2983,8 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
     }
 
-    // ==========================================
-    // 📸 DYNAMIC HOMEPAGE SLIDER
-    // ==========================================
-    // ==========================================
-    // 📸 DYNAMIC HOMEPAGE SLIDER (FIXED)
-    // ==========================================
+  
+    // DYNAMIC HOMEPAGE SLIDER
     async function loadDynamicSlider() {
         const wrapper = document.getElementById('dynamic-slider-wrapper');
         if (!wrapper) return;
@@ -3013,11 +3000,11 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
                 return;
             }
 
-            // 🔴 Check if the current user is a logged-in Teacher
+            //  Check if the current user is a logged-in Teacher
             const isTeacher = currentUser && currentUser.role === 'teacher';
 
             slides.forEach(slide => {
-                // 🚀 DIRECT CLOUDINARY URL
+                //  DIRECT CLOUDINARY URL
                 const imageUrl = slide.imageUrl; 
                 
                 wrapper.innerHTML += `
@@ -3043,7 +3030,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
                 `;
             });
 
-            // ✅ Fixed Swiper Initialization
+            //  Fixed Swiper Initialization
             new Swiper(".heroSwiper", {
                 spaceBetween: 0,
                 centeredSlides: true,
@@ -3058,7 +3045,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             wrapper.innerHTML = `<div class="swiper-slide" style="background: #0a0e1a; display: flex; align-items: center; justify-content: center; color: var(--error);">Unable to connect to server.</div>`;
         }
     }
-// --- 🏆 ACHIEVEMENT UPLOAD LOGIC ---
+// ---  ACHIEVEMENT UPLOAD LOGIC ---
 async function handleAchievement(e) {
     e.preventDefault(); // Stop page refresh!
     const form = e.target;
@@ -3100,7 +3087,7 @@ async function handleAchievement(e) {
         alert("⚠️ Server Error - Is the backend running?"); 
     }
 }
-    // ⏱️ LIVE CLOCK & TRAFFIC LOGIC
+    //  LIVE CLOCK & TRAFFIC LOGIC
 
          function startSystemStatus() {
         const clockElement = document.getElementById('liveClock');
@@ -3141,18 +3128,12 @@ async function handleAchievement(e) {
         // all your existing JS code...
      
         window.addEventListener("load", () => {
-          if (window.innerWidth <= 768) {
             const bubble = document.getElementById("mascotBubble");
-     
-            if (bubble) {
+            if (bubble && window.innerWidth <= 768) {
               bubble.classList.add("show");
-     
-              setTimeout(() => {
-                bubble.classList.remove("show");
-              }, 4000);
+              setTimeout(() => bubble.classList.remove("show"), 3000);
             }
-          }
-        });
+          });
 
     </script>
 </body>
