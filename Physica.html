@@ -805,7 +805,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             width: 90px; 
             height: auto; 
             filter: drop-shadow(0 0 10px rgba(0, 136, 255, 0.4)); 
-            transition: transform 0.3s ease; 
+            transition: transform 0.5s ease; 
             cursor: pointer; 
             animation: floatSubtle 6s ease-in-out infinite; 
             opacity: 0.95;
@@ -845,7 +845,17 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         /* === RESPONSIVE DESIGN === */
        /* === 📱 FINAL MOBILE UX POLISH === */
        @media (max-width:768px){
-
+        #live-ticker-text {
+            display: block !important; /* Changed from none to show it */
+            background: #002e66 !important; /* Deep blue matching reference */
+            color: #ffffff !important;
+            padding: 8px 0 !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+    
         body > div:first-of-type{
           display:flex !important;
           flex-direction:column;
@@ -863,17 +873,10 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           text-align:center;
           justify-content:center;
         }
-        
-
+    
         body{
           overflow-x:hidden;
         }
-        
-        /* remove marquee on mobile */
-        #live-ticker-text{
-          display:none !important;
-        }
-        
         
         /* header */
         header{
@@ -887,7 +890,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           padding:0 !important;
         }
         
-        /* college row */
+        /* college row - Using your font sizes */
         .college-branding{
           justify-content:center;
           text-align:center;
@@ -900,11 +903,11 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         }
         
         .college-name-en{
-          font-size:12px !important;
+          font-size:18px !important;
         }
         
         .college-name-as{
-          font-size:9px !important;
+          font-size:15px !important;
         }
         
         /* physica row */
@@ -919,7 +922,7 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           font-size:30px !important;
         }
         
-        /* nav */
+        /* nav - Using your 2-column grid */
         nav{
           width:100%;
         }
@@ -987,21 +990,24 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           padding:16px !important;
         }
         
-        /* mascot */
         .astronaut-container{
-          bottom:10px !important;
-          right:10px !important;
+          position: fixed !important; /* Changed from default to stay on screen */
+          bottom: 20px !important; 
+          right: 15px !important;
+          z-index: 3000 !important;
         }
         
         .astronaut-img{
-          width:48px !important;
+          width:55px !important;
         }
         
         .mascot-bubble{
           width:145px !important;
           font-size:11px !important;
+          bottom: 70px !important; /* Positions bubble above floating astronaut */
+          right: 0 !important;
         }
-         }
+    }
     
         /* === CUSTOM SCROLLBAR === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
