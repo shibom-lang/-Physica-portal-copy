@@ -990,11 +990,12 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
           padding:16px !important;
         }
         
-        .astronaut-container{
-          position: fixed !important; /* Changed from default to stay on screen */
-          bottom: 20px !important; 
-          right: 15px !important;
-          z-index: 3000 !important;
+        .astronaut-container {
+            position: fixed !important; 
+            bottom: 20px !important; 
+            right: 15px !important;
+            z-index: 3000 !important;
+            pointer-events: auto !important;
         }
         
         .astronaut-img{
