@@ -843,7 +843,6 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             opacity: 1; 
             visibility: visible; 
         }
-        .hamburger-btn { display: none; }
         /* === RESPONSIVE DESIGN === */
        /* === 📱 FINAL MOBILE UX POLISH === */
       /* === 📱 FINAL MOBILE UX POLISH === */
@@ -893,39 +892,27 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         .dept-nav-area { width: 100% !important; align-items: center !important; }
         .logo { font-size: 28px !important; margin-bottom: 10px !important; }
 
-        .hamburger-btn {
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 136, 255, 0.1) !important;
-            border: 1px solid rgba(0, 136, 255, 0.3) !important;
-            border-radius: 8px !important;
-            color: var(--primary) !important;
-            width: 36px !important;
-            height: 36px !important;
-            cursor: pointer;
-            padding: 0 !important;
-        }
-
         nav ul {
-            display: none !important; /* Hides the menu by default */
+            display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 10px !important;
             width: 100% !important;
-            padding: 15px 10px 0 !important;
-            margin-top: 15px !important;
-            border-top: 1px solid rgba(255,255,255,0.05) !important;
+            padding: 0 10px !important;
+            
         }
-        
-        /* This class is added by JS when the hamburger is clicked */
-        nav ul.show-menu {
-            display: grid !important; 
-        }
-
-        /* Span the odd button (like Login) across the bottom */
-        nav ul li:last-child:nth-child(odd) {
+        ul li:last-child:nth-child(odd) {
             grid-column: 1 / -1 !important;
         }
+
+        .nav-link {
+            display: block !important;
+            padding: 12px 5px !important;
+            font-size: 12px !important;
+            background: rgba(255,255,255,0.07) !important;
+            border-radius: 8px !important;
+            text-align: center !important;
+        }
+
         /* 4. Hero & Content */
         .hero { padding: 30px 15px 15px !important; }
         .hero h1 { font-size: 26px !important; }
@@ -1018,24 +1005,16 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             </div>
     
             <div class="dept-nav-area" style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
                     <div class="logo" style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.5rem; color: var(--primary); text-shadow: 0 0 15px var(--primary-glow); line-height: 1;">
                         <dotlottie-wc src="https://lottie.host/b591dbd3-2f76-46d5-9a96-a0b97b60d11b/PY2eF3h4KP.lottie" autoplay loop class="animated-lottie-logo" style="width: 36px; height: 36px; display: block; margin: 0; padding: 0;"></dotlottie-wc>
                         <span style="display: block; transform: translateY(2px);">PHYSICA</span>
                     </div>
                     
-                    <button id="theme-toggle" onclick="toggleTheme()" style="background: rgba(148, 163, 184, 0.15); border: 1px solid var(--border); border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: var(--shadow); padding: 0; margin: 0; line-height: 1;">
+                    <button id="theme-toggle" onclick="toggleTheme()" style="background: rgba(148, 163, 184, 0.15); border: 1px solid var(--border); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; box-shadow: var(--shadow); padding: 0; margin: 0; line-height: 1;" onmouseover="this.style.transform='scale(1.1)';" onmouseout="this.style.transform='scale(1)';">
                         ☀️
                     </button>
-
-                    <button id="mobile-menu-btn" class="hamburger-btn" onclick="toggleMobileMenu()"
-                         title="Open mobile menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
+                
                 </div>
                 <nav>
                     <ul class="flex" id="mainNav" style="list-style: none; gap: 5px;"></ul>
@@ -1052,10 +1031,6 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
     </div>
 
     <script>
-        function toggleMobileMenu() {
-            const nav = document.getElementById('mainNav');
-            nav.classList.toggle('show-menu');
-        }
         // --- CONFIGURATION ---
         const API_URL = "https://physica-portal-production.up.railway.app/api";
 
@@ -1107,11 +1082,10 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
 
             if (currentUser) {
                 nav.innerHTML += `<li><a class="nav-link" onclick="logout()" style="cursor: pointer; color: var(--error);">LOGOUT</a></li>`;
+                
+                // 🔴 FIX: Added the active class check and changed onclick to navigate('dashboard')
                 nav.innerHTML += `<li><a class="nav-link ${activePage === 'dashboard' ? 'active' : ''}" onclick="navigate('dashboard')" style="cursor: pointer;">DASHBOARD</a></li>`;
             }
-
-            // NEW: Auto-close the mobile menu when a link is clicked
-            nav.classList.remove('show-menu'); 
         }
         function goToDashboard() {
             if (currentUser.role === 'teacher') renderTeacherDash();
