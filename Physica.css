@@ -1095,5 +1095,11 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
         ::-webkit-scrollbar-thumb { background: var(--secondary); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
         
-        
+        <style>
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
     
