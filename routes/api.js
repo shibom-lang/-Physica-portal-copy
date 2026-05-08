@@ -5,8 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs'); //  SECURITY TOOL 
 const { User, Resource, Blog, Notice, ResearchPost, EventHighlight, EventPost, Achievement, Carousel } = require('../models/schemas');
-// --- 1. FILE UPLOAD SETUP (Multer) ---
-// --- 1. FILE UPLOAD SETUP (Cloudinary) ---
 // --- 1. FILE UPLOAD SETUP (Cloudinary) ---
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
@@ -18,7 +16,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Create the storage engine for Cloudinary
 // Create the storage engine for Cloudinary
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -173,8 +170,6 @@ router.put('/profile/:username', upload.single('profilePic'), async (req, res) =
     }
 });
 // --- 4. UPLOAD FILE ROUTE ---
-// Upload a Resource or Magazine (Upgraded with Academic Tags)
-// --- 4. UPLOAD FILE ROUTE ---
 // Upload a Resource or Magazine (Upgraded for Cloudinary)
 router.post('/upload', upload.single('file'), async (req, res) => {
     try {
@@ -212,10 +207,10 @@ router.get('/resources', async (req, res) => {
         res.status(500).json({ message: "Failed to fetch resources" });
     }
 });
-// --- 6. BLOG ROUTE (CLEAN & SAFE) ---
+// --- 6. BLOG ROUTE ---
 // ---   BLOG API ---
 
-// 1. Post a new Blog (If Student = Pending, If Teacher = Approved)
+// 1. Post a new Blog 
 router.post('/blogs', upload.fields([
     { name: 'image', maxCount: 1 }, 
     { name: 'infographic', maxCount: 1 }, 
@@ -268,7 +263,6 @@ router.delete('/resources/:id', async (req, res) => {
         if (!resource) return res.status(404).json({ message: "File not found" });
 
         // We ONLY delete the database entry now. 
-        // (Cloudinary holds the actual file safely in the cloud)
         await Resource.findByIdAndDelete(req.params.id);
         
         res.json({ message: "Resource deleted successfully" });
