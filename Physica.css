@@ -1,5 +1,4 @@
-
-        body { transition: background 0.5s ease, color 0.5s ease; }
+body { transition: background 0.5s ease, color 0.5s ease; }
         .card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease; }
         
         body.light-theme {
@@ -1084,22 +1083,18 @@ filter: grayscale(100%) contrast(0.9) brightness(1.12);
             .mascot-bubble { width: 150px !important; bottom: 70px !important; right: 0 !important; }
             
             body { overflow-x: hidden; }
-            .container { width: 100%; padding: 0 10px; 
-        }
-        .astronaut-container{
-            display:none !important;
-          }
-         
+            .container { width: 100%; padding: 0 10px; }
+            .astronaut-container { display: flex !important; }
+    
+
+        /* === GLOBAL: Scrollbar & Animations (outside media query) === */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-space); }
         ::-webkit-scrollbar-thumb { background: var(--secondary); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-        
-        <style>
+
         @keyframes pulse-green {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70%  { transform: scale(1);    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-    </style>
-    
