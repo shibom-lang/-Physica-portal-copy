@@ -8,6 +8,7 @@ require('dotenv').config(); // 🔒 Load the secret environment variables
 const apiRoutes = require('./routes/api');
 
 const app = express();
+app.set('trust proxy', 1); // 🚂 Required for Railway — trusts the proxy's X-Forwarded-For header
 const http = require('http');
 const { Server } = require('socket.io');
 const server = http.createServer(app);
