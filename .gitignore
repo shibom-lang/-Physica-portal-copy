@@ -1,5 +1,45 @@
+# ========================
+# Dependencies
+# ========================
 node_modules/
-.DS_Store
-# .gitignore file
+npm-debug.log*
+
+# ========================
+# Environment Variables
+# ========================
 .env
+.env.local
+.env.production
+
+# ========================
+# Uploads (use Cloudinary in production)
+# ========================
 uploads/
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Editor & IDE Files
+# ========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ========================
+# Logs
+# ========================
+logs/
+*.log
+
+# ========================
+# Misc
+# ========================
+*.tgz
+*.zip
