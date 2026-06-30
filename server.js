@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit'); // 🔒 Rate limiting
 require('dotenv').config(); // 🔒 Load the secret environment variables
 
 const apiRoutes = require('./routes/api');
@@ -10,10 +11,39 @@ const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
-const PORT = process.env.PORT || 5001; 
+const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+// 🔒 CORS — only allow requests from your actual domain
+const allowedOrigins = [
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:3000',
+    'https://your-physica-domain.com' // ← replace with your real production URL
+];
+
+const io = new Server(server, { cors: { origin: allowedOrigins } });
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, Postman in dev)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS policy blocked this origin: ' + origin));
+        }
+    }
+}));
+
+// 🔒 RATE LIMITER — max 10 login attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    message: { message: "Too many login attempts. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+app.use('/api/login', loginLimiter);
+
 app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -3,7 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcryptjs'); //  SECURITY TOOL 
+const bcrypt = require('bcryptjs'); //  SECURITY TOOL
+const jwt = require('jsonwebtoken'); // 🔒 JWT for token generation & verification
+const authMiddleware = require('../middleware/auth'); // 🔒 Auth guard for protected routes
 const { User, Resource, Blog, Notice, ResearchPost, EventHighlight, EventPost, Achievement, Carousel } = require('../models/schemas');
 // --- 1. FILE UPLOAD SETUP (Cloudinary) ---
 const cloudinary = require('cloudinary').v2;
@@ -45,10 +47,17 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid Username or Password" });
 
-        //  (Login Success)  
+        // 🔒 Generate JWT token (expires in 7 days)
+        const token = jwt.sign(
+            { id: user._id, username: user.username, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        // ✅ Login Success — return user data + token
         res.status(200).json({
             _id: user._id,
-            username: user.username, 
+            username: user.username,
             name: user.name,
             role: user.role,
             semester: user.semester,
@@ -56,7 +65,8 @@ router.post('/login', async (req, res) => {
             profilePicture: user.profilePicture,
             designation: user.designation,
             qualifications: user.qualifications,
-            bio: user.bio
+            bio: user.bio,
+            token // 🔑 Send token to frontend
         });
 
     } catch (err) {
@@ -123,9 +133,10 @@ router.get('/students/pending', async (req, res) => {
         res.status(500).json({ message: "Failed to load pending students." });
     }
 });
-// Approve a specific student
-router.put('/students/approve/:id', async (req, res) => {
+// Approve a specific student — 🔒 Teachers only
+router.put('/students/approve/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can approve students." });
         await User.findByIdAndUpdate(req.params.id, { status: 'approved' });
         res.status(200).json({ message: "Student Approved!" });
     } catch (err) {
@@ -146,17 +157,21 @@ router.get('/faculty', async (req, res) => {
     }
 });
 
-//  Update Teacher Profile Accepts Profile Picture Upload)
-router.put('/profile/:username', upload.single('profilePic'), async (req, res) => {
+// Update Teacher Profile — 🔒 Only the owner can update their own profile
+router.put('/profile/:username', authMiddleware, upload.single('profilePic'), async (req, res) => {
     try {
+        // 🔒 Ownership check — you can only edit YOUR own profile
+        if (req.user.username !== req.params.username) {
+            return res.status(403).json({ message: "You can only update your own profile." });
+        }
+
         const { qualifications, bio } = req.body;
         const updateData = {};
-        
+
         if (qualifications) updateData.qualifications = qualifications;
         if (bio) updateData.bio = bio;
-        if (req.file) updateData.profilePicture = req.file.path; // Save new image path
+        if (req.file) updateData.profilePicture = req.file.path;
 
-        // Find the teacher by username and update their data
         const updatedUser = await User.findOneAndUpdate(
             { username: req.params.username },
             { $set: updateData },
@@ -255,44 +270,43 @@ router.put('/blogs/approve/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Failed to approve blog." }); }
 });
 
-// --- 7. DELETE RESOURCE (Notes & Magazines) ---
-// --- 7. DELETE RESOURCE (Notes & Magazines) ---
-router.delete('/resources/:id', async (req, res) => {
+// --- 7. DELETE RESOURCE (Notes & Magazines) — 🔒 Teachers only ---
+router.delete('/resources/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can delete resources." });
         const resource = await Resource.findById(req.params.id);
         if (!resource) return res.status(404).json({ message: "File not found" });
-
-        // We ONLY delete the database entry now. 
         await Resource.findByIdAndDelete(req.params.id);
-        
         res.json({ message: "Resource deleted successfully" });
-    } catch (err) { 
+    } catch (err) {
         console.error("Delete Resource Error:", err);
-        res.status(500).json(err); 
+        res.status(500).json({ message: "Failed to delete resource" });
     }
 });
 
-// --- 8. DELETE BLOG ---
-router.delete('/blogs/:id', async (req, res) => {
+// --- 8. DELETE BLOG — 🔒 Teachers only ---
+router.delete('/blogs/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can delete blogs." });
         await Blog.findByIdAndDelete(req.params.id);
         res.json({ message: "Blog deleted successfully" });
-    } catch (err) { res.status(500).json(err); }
+    } catch (err) { res.status(500).json({ message: "Failed to delete blog" }); }
 });
 
-//  DIGITAL NOTICE BOARD
-// Post a Notice (Teachers Only) - Supports optional file attachment
-router.post('/notices', upload.single('file'), async (req, res) => {
+// DIGITAL NOTICE BOARD
+// Post a Notice — 🔒 Teachers only (role verified from JWT, not body)
+router.post('/notices', authMiddleware, upload.single('file'), async (req, res) => {
     try {
-        const { title, content, author, role } = req.body;
-        
-        if (role !== 'teacher') return res.status(403).json({ message: "Only teachers can post notices." });
+        const { title, content, author } = req.body;
+
+        // 🔒 Role read from verified JWT token — cannot be faked
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can post notices." });
 
         const newNotice = new Notice({
             title,
             content,
             author,
-            filePath: req.file ? req.file.path : null // Save file path if attached
+            filePath: req.file ? req.file.path : null
         });
 
         await newNotice.save();
@@ -313,9 +327,10 @@ router.get('/notices', async (req, res) => {
     }
 });
 
-// Delete a Notice
-router.delete('/notices/:id', async (req, res) => {
+// Delete a Notice — 🔒 Teachers only
+router.delete('/notices/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can delete notices." });
         await Notice.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Notice deleted" });
     } catch (err) {
@@ -374,18 +389,18 @@ router.delete('/research-feed/:id', async (req, res) => {
 
 // ---  HIGHLIGHTS (Categories) ---
 
-// 1. Create a New Highlight Category (Teachers Only)
-router.post('/events/highlight', async (req, res) => {
+// 1. Create a New Highlight Category — 🔒 Teachers only (role from JWT)
+router.post('/events/highlight', authMiddleware, async (req, res) => {
     try {
-        const { title, role, author } = req.body;
-        if (role !== 'teacher') return res.status(403).json({ message: "Unauthorized" });
+        const { title, author } = req.body;
+        // 🔒 Role verified from JWT — cannot be spoofed from body
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized" });
 
         const newHighlight = new EventHighlight({ title, createdBy: author });
         await newHighlight.save();
         res.status(201).json(newHighlight);
     } catch (err) {
-        // Check for duplicate name error
-        if(err.code === 11000) return res.status(400).json({message: "Category name already exists."});
+        if (err.code === 11000) return res.status(400).json({ message: "Category name already exists." });
         res.status(500).json({ message: "Failed to create category." });
     }
 });

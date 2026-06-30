@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <link rel="stylesheet" href="Physica.css">
-    
+    <!-- XSS FIX: DOMPurify sanitises all user-generated HTML before it touches the DOM -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 </head>
 
 <body>
@@ -53,9 +54,9 @@
         </div>
     </div>
     <header>
-        <marquee id="live-ticker-text" style="color: var(--text-main); font-size: 0.9rem; margin-left: 15px; font-weight: 500;" scrollamount="5">
+        <div class="ticker-wrapper"><div id="live-ticker-text" class="ticker-track">
             Loading live updates...
-        </marquee>
+        </div></div>
         <div class="header-container container flex justify-between items-center">
             <div class="college-branding" style="display: flex; align-items: center; gap: 15px;">
                 <img class="college-logo" src="https://aryavidyapeeth.webdcl.com/images/logo.png" alt="College logo" height="55px" width="55px" style="filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));">
@@ -161,12 +162,64 @@
     </div>
 
     <script>
+        // ── XSS FIX: single sanitize helper used everywhere user content is rendered ──
+        function sanitize(str) {
+            if (str === null || str === undefined) return '';
+            // DOMPurify strips all executable tags/attributes; FORCE_BODY wraps fragments safely
+            return DOMPurify.sanitize(String(str), { FORCE_BODY: false });
+        }
+
+        // ── LOADING STATE + TOAST helper ──────────────────────────────────────
+        function setLoading(btn, isLoading, originalText) {
+            if (!btn) return;
+            btn.disabled = isLoading;
+            btn.textContent = isLoading ? 'Please wait...' : originalText;
+            btn.style.opacity = isLoading ? '0.65' : '1';
+        }
+        function showToast(msg, type = 'success') {
+            const existing = document.getElementById('physica-toast');
+            if (existing) existing.remove();
+            const t = document.createElement('div');
+            t.id = 'physica-toast';
+            t.textContent = msg;
+            const colors = { success: '#10b981', error: '#ef4444', info: '#0088ff' };
+            Object.assign(t.style, {
+                position: 'fixed', bottom: '2rem', left: '50%',
+                transform: 'translateX(-50%)', zIndex: 9999,
+                background: colors[type] || colors.info,
+                color: '#fff', padding: '0.75rem 1.5rem',
+                borderRadius: '8px', fontWeight: '600',
+                fontSize: '0.95rem', boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                transition: 'opacity 0.4s ease', opacity: '1',
+                maxWidth: '90vw', textAlign: 'center'
+            });
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+        }
+
         function toggleMobileMenu() {
             const nav = document.getElementById('mainNav');
             nav.classList.toggle('show-menu');
         }
         // --- CONFIGURATION ---
         const API_URL = "https://physica-portal-production.up.railway.app/api";
+
+        // Automatically injects the JWT Authorization token into every backend request
+        const originalFetch = window.fetch;
+        window.fetch = async function(url, options = {}) {
+            // Only attach the token to our own backend API (and ignore login/register)
+            if (typeof url === 'string' && url.startsWith(API_URL) && !url.includes('/login') && !url.includes('/register')) {
+                
+                // Grab the saved user session from LocalStorage
+                const sessionData = JSON.parse(localStorage.getItem('physicaUser')) || {};
+                const token = sessionData.token || ''; 
+                
+                // Ensure headers exist, then attach the Bearer token
+                options.headers = options.headers || {};
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            return originalFetch(url, options);
+        };
 
         // --- DATA STORE ---
         const STATIC_DATA = {
@@ -223,7 +276,9 @@
             nav.classList.remove('show-menu');
         }
         function goToDashboard() {
-            if (currentUser.role === 'teacher') renderTeacherDash();
+            // SECURITY FIX: read role from localStorage, not mutable runtime object
+            const role = getVerifiedRole();
+            if (role === 'teacher') renderTeacherDash();
             else renderStudentDash();
         }
 
@@ -231,6 +286,20 @@
             currentUser = null;
             localStorage.removeItem('physicaUser'); 
             navigate('home');
+        }
+
+        // ── SECURITY FIX: always re-read role from localStorage, never trust runtime mutation ──
+        function getVerifiedRole() {
+            const stored = localStorage.getItem('physicaUser');
+            if (!stored) return null;
+            try { return JSON.parse(stored).role; } catch { return null; }
+        }
+        function requireTeacher() {
+            if (getVerifiedRole() !== 'teacher') {
+                alert('⛔ Action not permitted.');
+                return false;
+            }
+            return true;
         }
         // ---  LIGHT/DARK THEME LOGIC ---
         function toggleTheme() {
@@ -284,7 +353,7 @@
                 }
 
                 // If there ARE new notices, format them with the "NEW" tag
-                const formattedNotices = recentNotices.slice(0, 5).map(n => `🚨 <b>NEW:</b> ${n.title}`);
+                const formattedNotices = recentNotices.slice(0, 5).map(n => `🚨 <b>NEW:</b> ${sanitize(n.title)}`);
                 
                 // Combine the base message with the new notices
                 tickerEl.innerHTML = `${baseMessage} &nbsp;&nbsp;&nbsp;&nbsp; ${formattedNotices.join(' &nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp; ')}`;
@@ -401,16 +470,16 @@
                     
                         
                        ${f.profilePicture 
-                         ? `<img src="${f.profilePicture.replace(/\\/g, '/')}" style="width: 130px; height: 130px; border-radius: 50%; object-fit: cover; margin: 0 auto 1.5rem; border: 3px solid var(--primary); box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);">` 
+                         ? `<img src="${f.profilePicture.replace(/\\/g, '/')}" style="width: 130px; height: 130px; border-radius: 50%; object-fit: cover; margin: 0 auto 1.5rem; border: 3px solid var(--primary); box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);" onerror="this.outerHTML='<div class=faculty-avatar style=font-size:5rem;margin-bottom:1rem></div>'">` 
                         : `<div class="faculty-avatar" style="font-size: 5rem; margin-bottom: 1rem;"></div>`
                           }
                         
-                        <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.4rem;">${f.name}</h3>
-                        <p style="color: var(--primary); margin-bottom: 0.5rem; font-weight: bold; letter-spacing: 0.05em;">${f.designation || 'Faculty Member'}</p>
-                        <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--accent);">${f.qualifications || 'Qualifications pending'}</p>
+                        <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.4rem;">${sanitize(f.name)}</h3>
+                        <p style="color: var(--primary); margin-bottom: 0.5rem; font-weight: bold; letter-spacing: 0.05em;">${sanitize(f.designation || 'Faculty Member')}</p>
+                        <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--accent);">${sanitize(f.qualifications || 'Qualifications pending')}</p>
                         
                         <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05);">
-                            <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6; font-style: italic;">"${f.bio}"</p>
+                            <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6; font-style: italic;">"${sanitize(f.bio)}"</p>
                         </div>
                         
                         <a href="mailto:${f.username}@avcollege.ac.in" class="btn btn-outline btn-sm" style="width: 100%; border-color: rgba(255,255,255,0.2); color: var(--text-dim);">✉️ Contact Faculty</a>
@@ -617,33 +686,58 @@
         // --- AUTHENTICATION FUNCTIONS ---
         async function handleLogin(e) {
             e.preventDefault();
-            const u = document.getElementById('username').value;
+        
+            const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
+        
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+        
+            setLoading(btn, true, origText);
+        
             try {
                 const res = await fetch(`${API_URL}/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: u,
+                        password: p
+                    })
                 });
-                
-                const data = await res.json(); //  Get the data first
-
+        
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    throw new Error("Invalid server response");
+                }
+        
                 if (res.ok) {
-                    // Check if the server sent an approved status
+        
                     if (data.role === 'student' && data.status === 'pending') {
-                        alert(" Access Denied: Your account is waiting for Teacher Approval.");
+                        showToast('Access Denied: Account waiting for Teacher Approval.', 'error');
                         return;
                     }
-                    
+        
                     currentUser = data;
-                    localStorage.setItem('physicaUser', JSON.stringify(currentUser)); 
-                    alert(`✅ Welcome ${currentUser.name}`);
-                    navigate('dashboard'); 
-                    
-                } else { 
-                    alert(` ${data.message || "Invalid Credentials"}`); 
+                    localStorage.setItem('physicaUser', JSON.stringify(currentUser));
+        
+                    showToast(`✅ Welcome ${sanitize(currentUser.name)}`, 'success');
+        
+                    navigate('dashboard');
+        
+                } else {
+                    showToast(data.message || 'Invalid Credentials', 'error');
                 }
-            } catch (err) { alert("Server Error"); }
+        
+            } catch (err) {
+                console.error(err);
+                showToast('Network error — check your connection.', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
         function toggleForms() {
             document.getElementById('login-form').classList.toggle('hidden');
@@ -696,8 +790,8 @@
                     toggleForms(); 
                     form.reset();
                 } 
-                else { alert("❌ Failed: " + data.message); }
-            } catch (err) { alert("Server Error"); }
+                else { showToast(data.message || "Registration failed.", "error"); }
+            } catch (err) { showToast("Network error.", "error"); }
         }
 
         // --- DASHBOARDS ---
@@ -708,7 +802,7 @@
                         <div class="card text-center" style="margin-bottom: 1.5rem;">
                                                    
                             ${currentUser.profilePicture 
-                            ? `<img src="${currentUser.profilePicture.replace(/\\/g, '/')}" style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; border: 2px solid var(--primary);">` 
+                            ? `<img src="${currentUser.profilePicture.replace(/\\/g, '/')}" style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; border: 2px solid var(--primary);" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` 
                            : `<div class="faculty-avatar" style="margin: 0 auto 1rem;">🧑🏻‍🏫</div>`
                              }
                             <h4 style="margin-bottom: 0.5rem;">${currentUser.name}</h4>
@@ -717,47 +811,47 @@
                         </div>
                        <nav class="dashboard-nav-list">
                             
-                            <div class="menu-item active" onclick="switchTab('t-upload')">
+                            <div class="menu-item active" onclick="switchTab('t-upload', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                                 <span>Repository</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-blog')">
+                            <div class="menu-item" onclick="switchTab('t-blog', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                                 <span>Blog Writer</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-approve'); loadPendingStudents(); loadPendingBlogs();">
+                            <div class="menu-item" onclick="switchTab('t-approve', event); loadPendingStudents(); loadPendingBlogs();">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                 <span>Approvals</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-notice')">
+                            <div class="menu-item" onclick="switchTab('t-notice', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
                                 <span>Post Notice</span>
                             </div> 
                             
-                            <div class="menu-item" onclick="switchTab('t-research')">
+                            <div class="menu-item" onclick="switchTab('t-research', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4.5L3 15v5h18v-5l-6-8.5V2"></path><path d="M9 2h6"></path><path d="M3 15h18"></path></svg>
                                 <span>Share Research</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-profile')">
+                            <div class="menu-item" onclick="switchTab('t-profile', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                                 <span>Profile Settings</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-gallery'); loadHighlightsDropdown('t-highlight-select');">
+                            <div class="menu-item" onclick="switchTab('t-gallery', event); loadHighlightsDropdown('t-highlight-select');">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                 <span>Event Gallery</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('t-achievement')">
+                            <div class="menu-item" onclick="switchTab('t-achievement', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
                                 <span>Post Achievement</span>
                             </div>   
                             
-                            <div class="menu-item" onclick="switchTab('t-slider')">
+                            <div class="menu-item" onclick="switchTab('t-slider', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
                                 <span>Homepage Slider</span>
                             </div>
@@ -1045,7 +1139,7 @@
                     <aside class="sidebar">
                        <div class="card text-center" style="margin-bottom: 1.5rem;">
                             ${currentUser.profilePicture 
-                            ? `<img src="${currentUser.profilePicture.replace(/\\/g, '/')}" style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; border: 2px solid var(--success);">` 
+                            ? `<img src="${currentUser.profilePicture.replace(/\\/g, '/')}" style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 1rem; border: 2px solid var(--success);" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` 
                             : `<div class="faculty-avatar" style="margin: 0 auto 1rem; background: rgba(16, 185, 129, 0.1); border: 2px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.1);">
                                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
                                     <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
@@ -1060,32 +1154,32 @@
                         
                             <nav style="display: flex; flex-direction: column; gap: 0.4rem;">
                             
-                            <div class="menu-item active" onclick="switchTab('s-overview')">
+                            <div class="menu-item active" onclick="switchTab('s-overview', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                                 <span>Attendance</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('s-resources')">
+                            <div class="menu-item" onclick="switchTab('s-resources', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                 <span>Downloads</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('s-research')">
+                            <div class="menu-item" onclick="switchTab('s-research', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v4.5L3 15v5h18v-5l-6-8.5V2"></path><path d="M9 2h6"></path><path d="M3 15h18"></path></svg>
                                 <span>Share Research</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('s-gallery'); loadHighlightsDropdown('s-highlight-select');">
+                            <div class="menu-item" onclick="switchTab('s-gallery', event); loadHighlightsDropdown('s-highlight-select');">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                 <span>Event Gallery</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('s-blog')">
+                            <div class="menu-item" onclick="switchTab('s-blog', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                                 <span>Submit Article</span>
                             </div>
                             
-                            <div class="menu-item" onclick="switchTab('s-achievement')">
+                            <div class="menu-item" onclick="switchTab('s-achievement', event)">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
                                 <span>Post Achievement</span>
                             </div>
@@ -1250,18 +1344,25 @@
             if (form.subject) formData.append('subject', form.subject.value);
             if (form.topic) formData.append('topic', form.topic.value);
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+            setLoading(btn, true, origText);
             try {
                 const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
                 if (res.ok) {
-                    alert(`✅ Upload Successful! Added to ${type}`);
+                    showToast(`✅ Upload Successful! Added to ${type}`, 'success');
                     form.reset();
-                    // display logic just in case
                     const academicFields = document.getElementById('academic-fields');
-                    if(academicFields) academicFields.style.display = 'block';
-                    
-                    if (role === 'teacher') loadFiles('teacher-file-list');
-                } else { alert("❌ Upload Failed"); }
-            } catch (err) { alert("⚠️ Server Error - Please check if backend is running"); }
+                    if (academicFields) academicFields.style.display = 'block';
+                    if (document.getElementById('resources-list')) loadFiles('resources-list');
+                } else {
+                    showToast('Upload failed — check file size and type.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — is the backend running?', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
         async function handleNoticePost(e) {
             e.preventDefault();
@@ -1278,15 +1379,22 @@
                 formData.append('file', fileInput.files[0]);
             }
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+            setLoading(btn, true, origText);
             try {
                 const res = await fetch(`${API_URL}/notices`, { method: 'POST', body: formData });
                 if (res.ok) {
-                    alert("📢 Notice Broadcasted Successfully!");
+                    showToast('📢 Notice Broadcasted Successfully!', 'success');
                     form.reset();
-                    renderNotices(); 
-                    updateNav('notices');
-                } else { alert("❌ Failed to post notice."); }
-            } catch (err) { alert("Server Error"); }
+                } else {
+                    showToast('Failed to post notice.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — check your connection.', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
 
         async function handleResearchPost(e) {
@@ -1313,14 +1421,23 @@
                 formData.append('document', docInput.files[0]);
             }
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+            setLoading(btn, true, origText);
             try {
                 const res = await fetch(`${API_URL}/research-feed`, { method: 'POST', body: formData });
                 if (res.ok) {
-                    alert("✅ Research Published Successfully!");
-                    form.reset(); 
-                    navigate('research'); 
-                } else { alert("❌ Failed to publish post."); }
-            } catch (err) { alert("⚠️ Server Error - Make sure your backend is running."); }
+                    showToast('✅ Research Published!', 'success');
+                    form.reset();
+                    navigate('research');
+                } else {
+                    showToast('Failed to publish research.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — make sure backend is running.', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
 
         async function handleBlog(e) {
@@ -1342,19 +1459,28 @@
             const docInput = form.querySelector('input[name="document"]');
             if (docInput && docInput.files.length > 0) formData.append('document', docInput.files[0]);
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+            setLoading(btn, true, origText);
             try {
                 const res = await fetch(`${API_URL}/blogs`, { method: 'POST', body: formData });
                 if (res.ok) {
                     if (currentUser.role === 'student') {
-                        alert("✅ Article Submitted! It will appear on the portal once a teacher approves it.");
+                        showToast('✅ Article submitted! Awaiting teacher approval.', 'success');
                         form.reset();
                     } else {
-                        alert("✅ Blog Published Successfully!");
+                        showToast('✅ Blog Published!', 'success');
                         form.reset();
-                        navigate('blogs'); 
+                        navigate('blogs');
                     }
-                } else { alert("❌ Failed to publish. Check backend console."); }
-            } catch (err) { alert("⚠️ Server Error - Is the backend running?"); }
+                } else {
+                    showToast('Failed to publish — check backend console.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — is the backend running?', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
 
         // --- 📝 BLOG APPROVAL LOGIC ---
@@ -1374,8 +1500,8 @@
                     <tbody>
                         ${blogs.map(b => `
                             <tr>
-                                <td style="color: var(--text-main); font-weight: 500;">${b.title}</td>
-                                <td>${b.author}</td>
+                                <td style="color: var(--text-main); font-weight: 500;">${sanitize(b.title)}</td>
+                                <td>${sanitize(b.author)}</td>
                                 <td style="display: flex; gap: 8px;">
                                     <button onclick="approveBlog('${b._id}')" class="btn btn-sm btn-success" style="padding: 4px 8px;">✅ Approve</button>
                                     <button onclick="deleteItem('${b._id}', 'blogs'); setTimeout(loadPendingBlogs, 500);" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 8px;">Reject & Delete</button>
@@ -1393,8 +1519,8 @@
                 if (res.ok) {
                     alert("✅ Article Approved and Published to the public Journal!");
                     loadPendingBlogs(); // Refresh the table
-                } else { alert("❌ Failed to approve."); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast("Failed to approve.", "error"); }
+            } catch (err) { showToast("Network error.", "error"); }
         }
 
        // 🔴 1. Global array to hold files so the search bar works instantly without lagging
@@ -1433,20 +1559,19 @@
            }
        }
 
-       // 🔴 3. The logic that draws the sleek cards, shows tags, and handles live searching
+       // 3. The logic that draws the sleek cards, shows tags, and handles live searching
        function filterResources(elementId, isTeacher) {
            const query = document.getElementById('resource-search-input').value.toLowerCase();
            const grid = document.getElementById('resource-grid');
            
            // Filter the files based on what the user typed
-           const filtered = allResources.filter(f => 
-               f.title.toLowerCase().includes(query) || 
-               (f.semester && f.semester.toLowerCase().includes(query)) ||
-               (f.subject && f.subject.toLowerCase().includes(query)) ||
-               (f.topic && f.topic.toLowerCase().includes(query)) ||
-               (f.type && f.type.toLowerCase().includes(query))
-           );
-
+          const filtered = allResources.filter(f => 
+          (f.title && f.title.toLowerCase().includes(query)) || 
+          (f.semester && f.semester.toLowerCase().includes(query)) ||
+          (f.subject && f.subject.toLowerCase().includes(query)) ||
+          (f.topic && f.topic.toLowerCase().includes(query)) ||
+          (f.type && f.type.toLowerCase().includes(query))
+      );
            if (filtered.length === 0) {
                grid.innerHTML = "<div class='card text-center' style='grid-column: 1 / -1;'><p style='color: var(--text-dim);'>No files match your search.</p></div>";
                return;
@@ -1516,7 +1641,7 @@
                 container.innerHTML = notices.map(n => `
                     <div class="card" style="border-left: 4px solid var(--accent);">
                         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; border:none; padding-bottom: 0;">
-                            <span style="color: var(--text-main); font-size: 1.1rem;">${n.title}</span>
+                            <span style="color: var(--text-main); font-size: 1.1rem;">${sanitize(n.title)}</span>
                             ${isTeacher ? `
                             <button onclick="deleteItem('${n._id}', 'notices')" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;" onmouseover="this.style.background='var(--error)'; this.style.color='white';" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.color='var(--error)';" title="Delete Notice">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1530,7 +1655,7 @@
                         </div>
                         <div class="card-body" style="padding-top: 0.5rem;">
                             <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 1rem;">
-                                Posted by ${n.author} • ${new Date(n.date).toLocaleDateString()}
+                                Posted by ${sanitize(n.author)} • ${new Date(n.date).toLocaleDateString()}
                             </p>
                             <p style="white-space: pre-wrap; margin-bottom: 1rem; color: var(--text-dim);">${n.content || ''}</p>
                             ${n.filePath ? `<a href="${n.filePath}" target="_blank" class="btn btn-sm btn-outline">📎 View Attachment</a>` : ''}
@@ -1593,13 +1718,13 @@
                         ` : ''}
 
                         <header style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
-                            <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.3; margin-bottom: 1.5rem; padding-right: 3rem;">${b.title}</h1>
+                            <h1 style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1.3; margin-bottom: 1.5rem; padding-right: 3rem;">${sanitize(b.title)}</h1>
                             <div style="display: flex; align-items: center; gap: 12px; color: var(--text-dim); font-size: 0.95rem;">
                                 <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; font-weight: bold;">
                                     ${b.author.charAt(0).toUpperCase()}
                                 </div>
                                 <div style="line-height: 1.4;">
-                                    <strong style="color: var(--text-main); font-size: 1.05rem;">${b.author}</strong><br>
+                                    <strong style="color: var(--text-main); font-size: 1.05rem;">${sanitize(b.author)}</strong><br>
                                     ${new Date(b.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                 </div>
                             </div>
@@ -1607,23 +1732,26 @@
 
                         ${b.imagePath ? `
                             <div style="margin-bottom: 2rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
-                                <img src="${b.imagePath}" style="width: 100%; max-height: 450px; object-fit: cover;" alt="Blog Cover">
+                                <img src="${sanitize(b.imagePath)}" style="width: 100%; max-height: 450px; object-fit: cover;" alt="Blog Cover" onerror="this.parentElement.style.display='none'">
                             </div>
                         ` : ''}
                         
                         <div style="font-size: 1.1rem; line-height: 1.8; color: var(--text-dim); font-family: 'Inter', sans-serif;">
                             ${(() => {
-                                if (!b.infographicPath) return `<p style="white-space: pre-wrap; margin: 0;">${b.content}</p>`;
-                                const halfway = Math.floor(b.content.length / 2);
-                                const splitIndex = b.content.indexOf(' ', halfway);
-                                const firstHalf = splitIndex === -1 ? b.content : b.content.substring(0, splitIndex);
-                                const secondHalf = splitIndex === -1 ? '' : b.content.substring(splitIndex);
+                                if (!b.infographicPath) return `<p style="white-space: pre-wrap; margin: 0;">${sanitize(b.content)}</p>`;
+                                // FIX #11: guard for empty content (manuscript-only posts)
+                                const safeContent = b.content || '';
+                                if (!safeContent.trim()) return `<p style="color: var(--text-dim); font-style: italic;">Read the full article via the manuscript link below.</p>`;
+                                const halfway = Math.floor(safeContent.length / 2);
+                                const splitIndex = safeContent.indexOf(' ', halfway);
+                                const firstHalf = splitIndex === -1 ? safeContent : safeContent.substring(0, splitIndex);
+                                const secondHalf = splitIndex === -1 ? '' : safeContent.substring(splitIndex);
 
                                 return `
                                     <p style="white-space: pre-wrap; margin: 0;">${firstHalf}</p>
                                     
                                     <figure style="margin: 3rem 0; text-align: center; background: rgba(0, 136, 255, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px dashed rgba(0, 136, 255, 0.3);">
-                                        <img src="${b.infographicPath.replace(/\\/g, '/')}" alt="Data Infographic for ${b.title}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
+                                        <img src="${b.infographicPath.replace(/\\/g, '/')}" alt="Data Infographic for ${sanitize(b.title)}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
                                         <figcaption style="color: var(--primary); font-size: 0.95rem; margin-top: 1.2rem; font-weight: 500;">
                                             📊 Visual Data: <span style="color: var(--text-dim); font-weight: normal;">Key insights from this section</span>
                                         </figcaption>
@@ -1658,12 +1786,12 @@
                 console.error("Failed to render blogs:", err);
             }
         }
-        function switchTab(tabId) {
+        function switchTab(tabId, e) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            
-            const clickedItem = event.target.closest('.menu-item');
+            // FIX #4: use passed event instead of deprecated global event
+            const clickedItem = e && e.target ? e.target.closest('.menu-item') : null;
             if (clickedItem) {
                 clickedItem.classList.add('active');
             }
@@ -1671,31 +1799,34 @@
 
         navigate('home');
     
-        async function deleteItem(id, type) {
-            if (!currentUser || currentUser.role !== 'teacher') {
-                alert("⛔ ACCESS DENIED: Only teachers can delete items.");
-                return; 
+        async function deleteItem(id, type, ownerId) {
+            // FIX #15 + SECURITY FIX: read role from storage, not mutable currentUser.role
+            const isTeacher = getVerifiedRole() === 'teacher';
+            const isOwner = ownerId && currentUser && currentUser.name === ownerId;
+            if (!currentUser || (!isTeacher && !isOwner)) {
+                alert("⛔ ACCESS DENIED: Only teachers or the original author can delete this.");
+                return;
             }
             if (!confirm("⚠️ Are you sure you want to delete this? This cannot be undone.")) return;
 
             try {
                 const res = await fetch(`${API_URL}/${type}/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    alert("✅ Deleted Successfully");
+                    showToast('✅ Deleted successfully.', 'success');
                     if (type === 'resources') {
-                        if (document.getElementById('teacher-file-list')) loadFiles('teacher-file-list');
+                        // only reload the list that actually exists on screen
                         if (document.getElementById('resources-list')) loadFiles('resources-list');
                     } else if (type === 'research-feed') {
                         renderResearch();
                     } else if (type === 'notices') {
                         renderNotices();
                     } else if (type === 'events/post') {
-                        navigate('gallery'); // 🔴 NEW: Takes you back to the gallery safely
+                        navigate('gallery');
                     } else {
                         renderBlogs();
                     }
-                } else { alert("❌ Failed to delete."); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast('Failed to delete.', 'error'); }
+            } catch (err) { showToast('Network error — check your connection.', 'error'); }
         }
 
         async function loadPendingStudents() {
@@ -1730,8 +1861,8 @@
                 if (res.ok) {
                     alert("✅ Student Approved!");
                     loadPendingStudents(); 
-                } else { alert("❌ Failed to approve."); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast("Failed to approve.", "error"); }
+            } catch (err) { showToast("Network error.", "error"); }
         }
 
         async function renderResearch() {
@@ -1760,9 +1891,9 @@
                 <div class="card" style="margin-bottom: 2rem; padding: 0; overflow: hidden;">
                     <div style="padding: 1.5rem 1.5rem 1rem 1.5rem; display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
-                            <h3 style="color: var(--text-main); margin-bottom: 0.3rem;">${p.title}</h3>
+                            <h3 style="color: var(--text-main); margin-bottom: 0.3rem;">${sanitize(p.title)}</h3>
                             <p style="font-size: 0.85rem; color: var(--text-dim);">
-                                <strong style="color: var(--primary);">${p.author}</strong> (${p.role}) • ${new Date(p.date).toLocaleDateString()}
+                                <strong style="color: var(--primary);">${sanitize(p.author)}</strong> (${p.role}) • ${new Date(p.date).toLocaleDateString()}
                             </p>
                         </div>
                         ${isTeacher ? `
@@ -1778,12 +1909,12 @@
                     </div>
                         ${p.imagePath ? `
                             <div style="width: 100%; background: var(--bg-deep);">
-                                <img src="${p.imagePath}" style="width: 100%; max-height: 500px; object-fit: contain; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);" alt="Research Photo">
+                                <img src="${p.imagePath}" style="width: 100%; max-height: 500px; object-fit: contain; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);" alt="Research Photo" onerror="this.parentElement.style.display='none'">
                             </div>
                         ` : ''}
 
                         <div style="padding: 1.5rem;">
-                            <p style="color: var(--text-dim); line-height: 1.6; white-space: pre-wrap;">${p.caption}</p>
+                            <p style="color: var(--text-dim); line-height: 1.6; white-space: pre-wrap;">${sanitize(p.caption)}</p>
                         </div>
 
                         ${p.documentPath ? `
@@ -1823,14 +1954,16 @@
                 if (res.ok) {
                     const updatedUser = await res.json();
                     
-                    // Update Local Storage so the session remembers the new data!
-                    localStorage.setItem('physicaUser', JSON.stringify(updatedUser));
-                    currentUser = updatedUser; 
+                    // ✅ Merge server response into the existing session object so that
+                    // session-only fields (e.g. the JWT token) are never overwritten
+                    // by a profile endpoint that doesn't return them.
+                    currentUser = { ...currentUser, ...updatedUser };
+                    localStorage.setItem('physicaUser', JSON.stringify(currentUser));
                     
                     alert("✅ Profile Updated Successfully!");
                     navigate('faculty'); // Instantly take them to the Faculty page to see it!
                 } else {
-                    alert("❌ Failed to update profile.");
+                    showToast("Failed to update profile.", "error");
                 }
             } catch (err) {
                 alert("Server Error.");
@@ -1856,10 +1989,10 @@
                 }
 
                 container.innerHTML = highlights.map(h => `
-                    <div class="card text-center" onclick="renderHighlightPosts('${h._id}', '${h.title}')" style="cursor: pointer; transition: transform 0.3s; border-top: 4px solid var(--success);">
+                    <div class="card text-center" onclick="renderHighlightPosts('${h._id}', '${sanitize(h.title)}')" style="cursor: pointer; transition: transform 0.3s; border-top: 4px solid var(--success);">
                         <div style="font-size: 3.5rem; margin-bottom: 1rem;">📁</div>
-                        <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.5rem;">${h.title}</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-dim);">Created by ${h.createdBy}</p>
+                        <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.5rem;">${sanitize(h.title)}</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-dim);">Created by ${sanitize(h.createdBy)}</p>
                     </div>
                 `).join('');
             } catch (err) { document.getElementById('gallery-loader').innerHTML = "Server Offline"; }
@@ -1931,9 +2064,9 @@
                     <div class="card" style="margin-bottom: 2rem; padding: 0; overflow: hidden; border: 1px solid var(--border);">
                         <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
-                                <h3 style="color: white; margin-bottom: 0.3rem;">${p.title}</h3>
+                                <h3 style="color: white; margin-bottom: 0.3rem;">${sanitize(p.title)}</h3>
                                 <p style="font-size: 0.85rem; color: var(--text-dim);">
-                                    <strong style="color: var(--primary);">${p.author}</strong> (${p.role}) • ${new Date(p.date).toLocaleDateString()}
+                                    <strong style="color: var(--primary);">${sanitize(p.author)}</strong> (${p.role}) • ${new Date(p.date).toLocaleDateString()}
                                 </p>
                             </div>
                             ${isTeacher ? `
@@ -1964,7 +2097,7 @@
 </p>` : ''}
 
                         <div style="padding: 1.5rem;">
-                            <p style="color: var(--text-main); line-height: 1.6; white-space: pre-wrap;">${p.caption}</p>
+                            <p style="color: var(--text-main); line-height: 1.6; white-space: pre-wrap;">${sanitize(p.caption)}</p>
                         </div>
                     </div>
                     `;
@@ -1986,7 +2119,7 @@
                 }
                 
                 selectEl.innerHTML = '<option value="" disabled selected>-- Select a Category --</option>' + 
-                    highlights.map(h => `<option value="${h._id}">${h.title}</option>`).join('');
+                    highlights.map(h => `<option value="${h._id}">${sanitize(h.title)}</option>`).join('');
             } catch (err) { console.error("Failed to load categories."); }
         }
 
@@ -2005,8 +2138,8 @@
                     alert("✅ New Category Created!");
                     e.target.reset();
                     loadHighlightsDropdown('t-highlight-select'); // Instantly update the dropdown
-                } else { alert("❌ Failed to create category. Does it already exist?"); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast("Failed — category may already exist.", "error"); }
+            } catch (err) { showToast("Network error — check your connection.", "error"); }
         }
 
         // 3. Uploading an Album with Multiple Photos
@@ -2027,15 +2160,23 @@
                 formData.append('photos', photoInput.files[i]);
             }
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn ? btn.textContent : '';
+            setLoading(btn, true, origText);
             try {
                 const res = await fetch(`${API_URL}/events/post`, { method: 'POST', body: formData });
-                
                 if (res.ok) {
-                    alert("✅ Album Uploaded Successfully!");
+                    showToast('✅ Album Uploaded!', 'success');
                     form.reset();
-                    navigate('gallery'); // Instantly jump to the public gallery to view it!
-                } else { alert("❌ Failed to upload album."); }
-            } catch (err) { alert("Server Error"); }
+                    navigate('gallery');
+                } else {
+                    showToast('Failed to upload album.', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — check your connection.', 'error');
+            } finally {
+                setLoading(btn, false, origText);
+            }
         }
         // --- ✏️ RE-EDIT LOGIC ---
 
@@ -2054,8 +2195,8 @@
                 if (res.ok) {
                     alert("✅ Category Renamed!");
                     navigate('gallery'); // Refresh gallery to see the new name
-                } else { alert("❌ Failed to rename."); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast("Failed to rename category.", "error"); }
+            } catch (err) { showToast("Network error — check your connection.", "error"); }
         }
 
         // Safe wrapper — reads title/caption from cache, no quote-injection risk
@@ -2084,8 +2225,8 @@
                     alert("✅ Album Updated Successfully!");
                     // Refresh the current album page to show changes instantly
                     renderHighlightPosts(highlightId, highlightTitle); 
-                } else { alert("❌ Update failed."); }
-            } catch (err) { alert("Server Error"); }
+                } else { showToast("Album update failed.", "error"); }
+            } catch (err) { showToast("Network error — check your connection.", "error"); }
         }
     // ---  ACHIEVEMENT FEED ---
     async function openAchievementFeed(category, pageTitle) {
@@ -2135,7 +2276,7 @@
                                 ${p.author.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0;">${p.author} <span style="font-weight: normal; font-size: 0.85rem; color: var(--text-dim);">(${p.authorRole})</span></h3>
+                                <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0;">${sanitize(p.author)} <span style="font-weight: normal; font-size: 0.85rem; color: var(--text-dim);">(${p.authorRole})</span></h3>
                                 <p style="margin: 0; font-size: 0.8rem; color: var(--text-dim);">${new Date(p.date).toLocaleDateString()}</p>
                             </div>
                         </div>
@@ -2151,11 +2292,11 @@
                             ` : ''}</div>
 
                     <div style="padding: 1rem 1.5rem 0.5rem; background: rgba(0, 136, 255, 0.05);">
-                        <span style="font-size: 0.9rem; color: var(--text-main);"><strong>🏆 Featuring:</strong> <span style="color: var(--accent);">${p.studentsInvolved}</span></span>
+                        <span style="font-size: 0.9rem; color: var(--text-main);"><strong>🏆 Featuring:</strong> <span style="color: var(--accent);">${sanitize(p.studentsInvolved)}</span></span>
                     </div>
 
                     <div style="padding: 1rem 1.5rem 1.5rem;">
-                        <p style="color: var(--text-main); line-height: 1.6; margin: 0; white-space: pre-wrap;">${p.description}</p>
+                        <p style="color: var(--text-main); line-height: 1.6; margin: 0; white-space: pre-wrap;">${sanitize(p.description)}</p>
                     </div>
 
                     ${p.imagePaths.length > 0 ? `
@@ -2237,20 +2378,24 @@
                         </button>
                         ` : ''}
 
-                        <img src="${imageUrl}" alt="Department Highlight" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="${imageUrl}" alt="Department Highlight" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
                         
                         <div style="position: absolute; bottom: 0; width: 100%; padding: 40px 20px 20px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); color: white; text-align: center;">
-                            <h3 style="margin: 0; font-size: 1.6rem; text-shadow: 0 2px 8px rgba(0,0,0,0.9); color: #ffffff; font-weight: 700; letter-spacing: 0.02em;">${slide.title}</h3>
+                            <h3 style="margin: 0; font-size: 1.6rem; text-shadow: 0 2px 8px rgba(0,0,0,0.9); color: #ffffff; font-weight: 700; letter-spacing: 0.02em;">${sanitize(slide.title)}</h3>
                         </div>
                     </div>
                 `;
             });
 
-            //  Fixed Swiper Initialization
-            new Swiper(".heroSwiper", {
+            // FIX #13: destroy existing Swiper instance before creating a new one
+            if (window.heroSwiperInstance) {
+                window.heroSwiperInstance.destroy(true, true);
+                window.heroSwiperInstance = null;
+            }
+            window.heroSwiperInstance = new Swiper(".heroSwiper", {
                 spaceBetween: 0,
                 centeredSlides: true,
-                effect: "fade", 
+                effect: "fade",
                 autoplay: { delay: 3500, disableOnInteraction: false },
                 pagination: { el: ".swiper-pagination", clickable: true },
                 navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
@@ -2286,21 +2431,25 @@ async function handleAchievement(e) {
         return;
     }
 
+    const btn = e.target.querySelector('button[type="submit"]');
+    const origText = btn ? btn.textContent : '';
+    setLoading(btn, true, origText);
     try {
         const res = await fetch(`${API_URL}/achievements`, { method: 'POST', body: formData });
-        
         if (res.ok) {
-            alert("✅ Achievement Published Successfully!");
+            showToast('✅ Achievement Published!', 'success');
             form.reset();
-            const pageTitle = category === 'academic' 
-                ? ' Academic Programs & Excellence' 
+            const pageTitle = category === 'academic'
+                ? 'Academic Programs & Excellence'
                 : 'Student Activities & Achievements';
             openAchievementFeed(category, pageTitle);
-        } else { 
-            alert("❌ Failed to publish post. Check backend server."); 
+        } else {
+            showToast('Failed to publish — check backend.', 'error');
         }
-    } catch (err) { 
-        alert("⚠️ Server Error - Is the backend running?"); 
+    } catch (err) {
+        showToast('Network error — is the backend running?', 'error');
+    } finally {
+        setLoading(btn, false, origText);
     }
 }
     //  LIVE CLOCK & TRAFFIC LOGIC
@@ -2308,13 +2457,15 @@ async function handleAchievement(e) {
          function startSystemStatus() {
         const clockElement = document.getElementById('liveClock');
         if (clockElement) {
-            setInterval(() => {
+            // FIX #20: clear any previous interval before starting a new one
+            if (window._clockInterval) clearInterval(window._clockInterval);
+            window._clockInterval = setInterval(() => {
                 const now = new Date();
                 const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
                 const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 
                 clockElement.innerHTML = `<span style="color: var(--primary);"></span> ${dateStr} &nbsp;&nbsp;|&nbsp;&nbsp; <span style="color: var(--tertiary);">⏱️</span> <span class="clock-time">${timeStr}</span>`;
-            }, 1000); 
+            }, 1000);
         }
         // 2. REAL-TIME WEBSOCKET VISITOR TRACKING
         const visitorElement = document.getElementById('activeVisitors');
