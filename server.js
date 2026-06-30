@@ -13,25 +13,9 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5001;
 
-// 🔒 CORS — only allow requests from known origins
-const allowedOrigins = [
-    'http://localhost:5500',                                    // local dev (Live Server)
-    'http://127.0.0.1:5500',                                   // local dev (alternate)
-    'https://physica-portal-production.up.railway.app'         // 🚂 your real Railway URL
-];
-
-const io = new Server(server, { cors: { origin: allowedOrigins } });
-
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (file:// local open, Postman, mobile)
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS blocked: ' + origin));
-        }
-    }
-}));
+// CORS — open (same as original working config)
+app.use(cors());
+const io = new Server(server, { cors: { origin: "*" } });
 
 // 🔒 RATE LIMITER — max 10 login attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
