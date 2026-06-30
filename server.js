@@ -13,28 +13,22 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5001;
 
-// 🔒 CORS — only allow requests from your actual domain
+// 🔒 CORS — only allow requests from known origins
 const allowedOrigins = [
-    'http://localhost:5500',
-    'http://127.0.0.1:5500',
-    'http://localhost:3000',
-    // ⬇️ ============================================================
-    // 🚂 RAILWAY URL — paste your Railway domain here
-    // Go to: Railway Dashboard → your project → Settings → Domains
-    // It looks like: https://physica-portal-production.up.railway.app
-    // ===============================================================
-    'https://YOUR-APP-NAME.up.railway.app' // ← 🚂 REPLACE THIS with your Railway URL
+    'http://localhost:5500',                                    // local dev (Live Server)
+    'http://127.0.0.1:5500',                                   // local dev (alternate)
+    'https://physica-portal-production.up.railway.app'         // 🚂 your real Railway URL
 ];
 
 const io = new Server(server, { cors: { origin: allowedOrigins } });
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, Postman in dev)
+        // Allow requests with no origin (file:// local open, Postman, mobile)
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error('CORS policy blocked this origin: ' + origin));
+            callback(new Error('CORS blocked: ' + origin));
         }
     }
 }));
