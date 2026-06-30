@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs'); //  SECURITY TOOL
 const jwt = require('jsonwebtoken'); // 🔒 JWT for token generation & verification
 const authMiddleware = require('../middleware/auth'); // 🔒 Auth guard for protected routes
 const { User, Resource, Blog, Notice, ResearchPost, EventHighlight, EventPost, Achievement, Carousel } = require('../models/schemas');
+
 // --- 1. FILE UPLOAD SETUP (Cloudinary) ---
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
@@ -77,7 +78,6 @@ router.post('/login', async (req, res) => {
 });
 
 // --- 3.  SECURE REGISTRATION ROUTE ---
-// 1. UPDATED REGISTRATION ROUTE ---
 router.post('/register', async (req, res) => {
     try {
         const { password, role, name, designation, semester, rollNumber, adminCode } = req.body;
@@ -123,10 +123,10 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ message: "Server Error or Duplicate Roll Number" });
     }
 });
+
 // Get all pending students for the Teacher Dashboard
 router.get('/students/pending', async (req, res) => {
     try {
-        // Find all users who are students AND are still pending
         const pendingStudents = await User.find({ role: 'student', status: 'pending' }).select('-password');
         res.status(200).json(pendingStudents);
     } catch (err) {
@@ -134,6 +134,7 @@ router.get('/students/pending', async (req, res) => {
         res.status(500).json({ message: "Failed to load pending students." });
     }
 });
+
 // Approve a specific student — 🔒 Teachers only
 router.put('/students/approve/:id', authMiddleware, async (req, res) => {
     try {
@@ -150,7 +151,6 @@ router.put('/students/approve/:id', authMiddleware, async (req, res) => {
 //  Get all Teachers for the Public Faculty Page
 router.get('/faculty', async (req, res) => {
     try {
-        // Fetch users who are teachers. We use .select('-password') to keep passwords completely hidden!
         const faculty = await User.find({ role: 'teacher', status: 'approved' }).select('-password');
         res.status(200).json(faculty);
     } catch (err) {
@@ -161,7 +161,6 @@ router.get('/faculty', async (req, res) => {
 // Update Teacher Profile — 🔒 Only the owner can update their own profile
 router.put('/profile/:username', authMiddleware, upload.single('profilePic'), async (req, res) => {
     try {
-        // 🔒 Ownership check — you can only edit YOUR own profile
         if (req.user.username !== req.params.username) {
             return res.status(403).json({ message: "You can only update your own profile." });
         }
@@ -185,10 +184,13 @@ router.put('/profile/:username', authMiddleware, upload.single('profilePic'), as
         res.status(500).json({ message: "Failed to update profile" });
     }
 });
+
 // --- 4. UPLOAD FILE ROUTE ---
-// Upload a Resource or Magazine (Upgraded for Cloudinary)
-router.post('/upload', upload.single('file'), async (req, res) => {
+// Upload a Resource or Magazine (Upgraded for Cloudinary) 🔒 Teachers only
+router.post('/upload', authMiddleware, upload.single('file'), async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized." });
+        
         const newResource = new Resource({
             title: req.body.title,
             type: req.body.type,
@@ -206,15 +208,15 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         res.status(500).json({ message: "Cloudinary Upload Failed" }); 
     }
 });
-// Get all files (SECURED WITH RBAC)
+
+// Get all files
 router.get('/resources', async (req, res) => {
     try {
-        const { role } = req.query; // See who is asking
+        const { role } = req.query; 
         let query = {};
         
-        // 🔒 If the user is an outsider (not logged in), hide the academic notes
         if (!role || role === 'outsider' || role === 'undefined') {
-            query = { type: { $ne: 'Resource' } }; // $ne means "Not Equal to"
+            query = { type: { $ne: 'Resource' } }; 
         }
 
         const files = await Resource.find(query).sort({ date: -1 });
@@ -223,11 +225,10 @@ router.get('/resources', async (req, res) => {
         res.status(500).json({ message: "Failed to fetch resources" });
     }
 });
-// --- 6. BLOG ROUTE ---
-// ---   BLOG API ---
 
-// 1. Post a new Blog 
-router.post('/blogs', upload.fields([
+// --- 6. BLOG ROUTE ---
+// 1. Post a new Blog  🔒 Must be logged in
+router.post('/blogs', authMiddleware, upload.fields([
     { name: 'image', maxCount: 1 }, 
     { name: 'infographic', maxCount: 1 }, 
     { name: 'document', maxCount: 1 }
@@ -247,7 +248,7 @@ router.post('/blogs', upload.fields([
     } catch (err) { res.status(500).json({ message: "Failed to publish blog." }); }
 });
 
-// 2. Get All APPROVED Blogs (For the main public page)
+// 2. Get All APPROVED Blogs
 router.get('/blogs', async (req, res) => {
     try {
         const blogs = await Blog.find({ status: { $ne: 'pending' } }).sort({ date: -1 });
@@ -255,17 +256,19 @@ router.get('/blogs', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Failed to fetch blogs." }); }
 });
 
-// 3. Get All PENDING Blogs (For the Teacher Dashboard)
-router.get('/blogs/pending', async (req, res) => {
+// 3. Get All PENDING Blogs 🔒 Teachers only
+router.get('/blogs/pending', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized." });
         const blogs = await Blog.find({ status: 'pending' }).sort({ date: -1 });
         res.status(200).json(blogs);
     } catch (err) { res.status(500).json({ message: "Failed to fetch pending blogs." }); }
 });
 
-// 4. Approve a Pending Blog
-router.put('/blogs/approve/:id', async (req, res) => {
+// 4. Approve a Pending Blog 🔒 Teachers only
+router.put('/blogs/approve/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized." });
         const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
         res.status(200).json(updatedBlog);
     } catch (err) { res.status(500).json({ message: "Failed to approve blog." }); }
@@ -295,12 +298,11 @@ router.delete('/blogs/:id', authMiddleware, async (req, res) => {
 });
 
 // DIGITAL NOTICE BOARD
-// Post a Notice — 🔒 Teachers only (role verified from JWT, not body)
+// Post a Notice — 🔒 Teachers only
 router.post('/notices', authMiddleware, upload.single('file'), async (req, res) => {
     try {
         const { title, content, author } = req.body;
 
-        // 🔒 Role read from verified JWT token — cannot be faked
         if (req.user.role !== 'teacher') return res.status(403).json({ message: "Only teachers can post notices." });
 
         const newNotice = new Notice({
@@ -318,10 +320,10 @@ router.post('/notices', authMiddleware, upload.single('file'), async (req, res) 
     }
 });
 
-// Get all Notices (Public - anyone can see notices)
+// Get all Notices
 router.get('/notices', async (req, res) => {
     try {
-        const notices = await Notice.find().sort({ date: -1 }); // Newest first
+        const notices = await Notice.find().sort({ date: -1 });
         res.status(200).json(notices);
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch notices." });
@@ -338,8 +340,10 @@ router.delete('/notices/:id', authMiddleware, async (req, res) => {
         res.status(500).json({ message: "Failed to delete notice" });
     }
 });
-//  Create a New Post 
-router.post('/research-feed', upload.fields([
+
+// RESEARCH FEED
+//  Create a New Post  🔒 Must be logged in
+router.post('/research-feed', authMiddleware, upload.fields([
     { name: 'photo', maxCount: 1 }, 
     { name: 'document', maxCount: 1 }
 ]), async (req, res) => {
@@ -351,9 +355,7 @@ router.post('/research-feed', upload.fields([
             caption,
             author,
             role,
-            // Check if a photo was uploaded, save path
             imagePath: req.files && req.files['photo'] ? req.files['photo'][0].path : null,
-            // Check if a document was uploaded, save path
             documentPath: req.files && req.files['document'] ? req.files['document'][0].path : null
         });
 
@@ -364,10 +366,10 @@ router.post('/research-feed', upload.fields([
         res.status(500).json({ message: "Failed to publish research." });
     }
 });
-// 2. Get the Feed (Public - anyone can see the portfolio)
+
+// 2. Get the Feed 
 router.get('/research-feed', async (req, res) => {
     try {
-        // Fetch all posts and sort by newest first (-1)
         const posts = await ResearchPost.find().sort({ date: -1 }); 
         res.status(200).json(posts);
     } catch (err) {
@@ -375,26 +377,26 @@ router.get('/research-feed', async (req, res) => {
     }
 });
 
-// 3. Delete a Post (Moderation)
-router.delete('/research-feed/:id', async (req, res) => {
+// 3. Delete a Post 🔒 Teachers only
+router.delete('/research-feed/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized: Only teachers can delete posts." });
         await ResearchPost.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Post deleted successfully" });
     } catch (err) {
         res.status(500).json({ message: "Delete failed" });
     }
 });
+
 // ==========================================
 //  DEPARTMENT EVENT GALLERY API
 // ==========================================
 
 // ---  HIGHLIGHTS (Categories) ---
-
-// 1. Create a New Highlight Category — 🔒 Teachers only (role from JWT)
+// 1. Create a New Highlight Category — 🔒 Teachers only 
 router.post('/events/highlight', authMiddleware, async (req, res) => {
     try {
         const { title, author } = req.body;
-        // 🔒 Role verified from JWT — cannot be spoofed from body
         if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized" });
 
         const newHighlight = new EventHighlight({ title, createdBy: author });
@@ -406,7 +408,7 @@ router.post('/events/highlight', authMiddleware, async (req, res) => {
     }
 });
 
-// 2. Get All Highlight Categories (For the main gallery page & upload dropdown)
+// 2. Get All Highlight Categories 
 router.get('/events/highlights', async (req, res) => {
     try {
         const highlights = await EventHighlight.find();
@@ -417,14 +419,12 @@ router.get('/events/highlights', async (req, res) => {
 });
 
 // ---  EVENT ALBUM POSTS ---
-
-// 3. Create a New Album Post (Upload MULTIPLE photos at once)
-router.post('/events/post', upload.array('photos', 20), async (req, res) => {
+// 3. Create a New Album Post 🔒 Must be logged in
+router.post('/events/post', authMiddleware, upload.array('photos', 20), async (req, res) => {
     try {
         const { highlightId, title, caption, author, role } = req.body;
         if (!req.files || req.files.length === 0) return res.status(400).json({ message: "No photos selected." });
 
-        // Map through the uploaded files and get their Cloudinary paths
         const imagePaths = req.files.map(file => file.path); 
 
         const newPost = new EventPost({ highlightId, title, caption, imagePaths, author, role });
@@ -438,16 +438,17 @@ router.post('/events/post', upload.array('photos', 20), async (req, res) => {
 // 4. Get All Posts for a Specific Highlight Category
 router.get('/events/posts/:highlightId', async (req, res) => {
     try {
-        // Find posts that belong to the requested folder ID, sort by newest first
         const posts = await EventPost.find({ highlightId: req.params.highlightId }).sort({ date: -1 });
         res.status(200).json(posts);
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch albums." });
     }
 });
-// 5. Re-Edit a Highlight Category Name
-router.put('/events/highlight/:id', async (req, res) => {
+
+// 5. Re-Edit a Highlight Category Name 🔒 Teachers only
+router.put('/events/highlight/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized: Only teachers can edit categories." });
         const updatedHighlight = await EventHighlight.findByIdAndUpdate(
             req.params.id, 
             { title: req.body.title }, 
@@ -457,9 +458,10 @@ router.put('/events/highlight/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Failed to update category" }); }
 });
 
-// 6. Re-Edit an Album Post (Title and Caption)
-router.put('/events/post/:id', async (req, res) => {
+// 6. Re-Edit an Album Post 🔒 Teachers only
+router.put('/events/post/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized: Only teachers can edit albums." });
         const { title, caption } = req.body;
         const updatedPost = await EventPost.findByIdAndUpdate(
             req.params.id,
@@ -470,9 +472,10 @@ router.put('/events/post/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Failed to update album" }); }
 });
 
-// 7. Delete an Event Album (Gallery Post)
-router.delete('/events/post/:id', async (req, res) => {
+// 7. Delete an Event Album 🔒 Teachers only
+router.delete('/events/post/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized: Only teachers can delete albums." });
         const post = await EventPost.findById(req.params.id);
         if (!post) return res.status(404).json({ message: "Album not found" });
         await EventPost.findByIdAndDelete(req.params.id);
@@ -482,13 +485,12 @@ router.delete('/events/post/:id', async (req, res) => {
         res.status(500).json({ message: "Failed to delete album" });
     }
 });
-// ---  ACHIEVEMENTS & PORTFOLIO API ---
 
-// 1. Post a new Achievement (Supports Multiple Images)
-router.post('/achievements', upload.array('photos', 10), async (req, res) => {
+// ---  ACHIEVEMENTS & PORTFOLIO API ---
+// 1. Post a new Achievement 🔒 Must be logged in
+router.post('/achievements', authMiddleware, upload.array('photos', 10), async (req, res) => {
     try {
         const { category, studentsInvolved, description, author, authorRole } = req.body;
-        // Correctly extract Cloudinary URLs for the array
         const imagePaths = req.files ? req.files.map(file => file.path) : [];
 
         const newPost = new Achievement({ category, studentsInvolved, description, imagePaths, author, authorRole });
@@ -498,6 +500,7 @@ router.post('/achievements', upload.array('photos', 10), async (req, res) => {
         res.status(500).json({ message: "Failed to post achievement." });
     }
 });
+
 // 2. Get Achievements by Category
 router.get('/achievements/:category', async (req, res) => {
     try {
@@ -506,13 +509,15 @@ router.get('/achievements/:category', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Failed to fetch feed." }); }
 });
 
-// 3. Delete an Achievement
-router.delete('/achievements/:id', async (req, res) => {
+// 3. Delete an Achievement 🔒 Teachers only
+router.delete('/achievements/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ message: "Unauthorized: Only teachers can delete achievements." });
         await Achievement.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Deleted" });
     } catch (err) { res.status(500).json({ message: "Failed to delete" }); }
 });
+
 // ==========================================
 // 🖼️ HOMEPAGE CAROUSEL ROUTES
 // ==========================================
@@ -527,9 +532,10 @@ router.get('/carousel', async (req, res) => {
     }
 });
 
-// Upload a new banner from the Teacher Dashboard
-router.post('/carousel', upload.single('image'), async (req, res) => {
+// Upload a new banner 🔒 Teachers only
+router.post('/carousel', authMiddleware, upload.single('image'), async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ error: "Unauthorized: Only teachers can upload slides." });
         const newSlide = new Carousel({
             title: req.body.title,
             imageUrl: req.file.path,
@@ -542,13 +548,16 @@ router.post('/carousel', upload.single('image'), async (req, res) => {
         res.status(500).json({ error: "Failed to upload slide" });
     }
 });
-// Delete a homepage slider banner
-router.delete('/carousel/:id', async (req, res) => {
+
+// Delete a homepage slider banner 🔒 Teachers only
+router.delete('/carousel/:id', authMiddleware, async (req, res) => {
     try {
+        if (req.user.role !== 'teacher') return res.status(403).json({ error: "Unauthorized: Only teachers can delete slides." });
         await Carousel.findByIdAndDelete(req.params.id);
         res.json({ message: "Slide deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete slide" });
     }
 });
+
 module.exports = router;
