@@ -216,7 +216,7 @@
                 
                 // Ensure headers exist, then attach the Bearer token
                 options.headers = options.headers || {};
-                options.headers['Authorization'] = `Bearer ${token}`;
+                if (token) options.headers['Authorization'] = `Bearer ${token}`;
             }
             return originalFetch(url, options);
         };
@@ -259,7 +259,7 @@
 
         function updateNav(activePage) {
             const pages = currentUser ? 
-                (currentUser.role === 'teacher' ? ['home', 'faculty', 'notices', 'magazines', 'blogs', 'resources'] : ['home', 'faculty', 'notices', 'magazines', 'resources']) : 
+                (getVerifiedRole() === 'teacher' ? ['home', 'faculty', 'notices', 'magazines', 'blogs', 'resources'] : ['home', 'faculty', 'notices', 'magazines', 'resources']) : 
                 ['home', 'faculty', 'notices', 'magazines', 'blogs', 'resources', 'login'];
             
             const nav = document.getElementById('mainNav');
@@ -296,7 +296,7 @@
         }
         function requireTeacher() {
             if (getVerifiedRole() !== 'teacher') {
-                alert('⛔ Action not permitted.');
+                showToast('⛔ Action not permitted.', 'error');
                 return false;
             }
             return true;
@@ -672,8 +672,12 @@
                                 <label>Choose Password</label>
                                 <input type="password" name="password" placeholder="Strong Password" required>
 
-                                <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1rem;">CREATE ACCOUNT</button>
+                                <button type="submit" id="registerBtn" class="btn btn-success" style="width: 100%; margin-top: 1rem;">CREATE ACCOUNT</button>
                             </form>
+                            
+                            <div id="register-success-msg" class="hidden mt-4" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); padding: 1rem; border-radius: 8px; text-align: center;">
+                            </div>
+
                             <p class="text-center mt-4 text-sm" style="color: var(--text-dim);">
                                 Has account? <a onclick="toggleForms()" style="color: var(--primary); font-weight: 600; cursor:pointer;">Login</a>
                             </p>
@@ -772,6 +776,11 @@
                 adminCode: form.adminCode ? form.adminCode.value : ''
             };
         
+            const submitBtn = document.getElementById('registerBtn');
+            setLoading(submitBtn, true);
+            const successContainer = document.getElementById('register-success-msg');
+            successContainer.classList.add('hidden');
+        
             try {
                 const res = await fetch(`${API_URL}/register`, {
                     method: 'POST',
@@ -783,15 +792,28 @@
         
                 if (res.ok) { 
                     if (role === 'student') {
-                        alert(`✅ Registration Sent!\n\nYour Official Username is:\n👉 ${data.generatedUsername} 👈\n\nPlease save this! You can login once a teacher approves your account.`);
+                        successContainer.innerHTML = `
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">✅ Registration Sent!</h4>
+                            <p style="color: var(--text-dim); margin-bottom: 0.5rem;">Your Official Username is:</p>
+                            <div style="background: var(--bg-dark); padding: 0.5rem; border-radius: 4px; font-weight: bold; font-family: monospace; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                                ${data.generatedUsername}
+                            </div>
+                            <p style="color: var(--text-dim); font-size: 0.9rem;">Please copy & save this! You can login once a teacher approves your account.</p>
+                        `;
                     } else {
-                        alert(`✅ Teacher Account Created! Please Login.`);
+                        successContainer.innerHTML = `
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">✅ Teacher Account Created!</h4>
+                            <p style="color: var(--text-dim); font-size: 0.9rem;">Please switch to Login.</p>
+                        `;
                     }
-                    toggleForms(); 
+                    successContainer.classList.remove('hidden');
                     form.reset();
+                    // Optional: auto-switch to login after 5 seconds if teacher
+                    if (role === 'teacher') setTimeout(toggleForms, 3000);
                 } 
                 else { showToast(data.message || "Registration failed.", "error"); }
             } catch (err) { showToast("Network error.", "error"); }
+            finally { setLoading(submitBtn, false); }
         }
 
         // --- DASHBOARDS ---
@@ -1517,7 +1539,7 @@
             try {
                 const res = await fetch(`${API_URL}/blogs/approve/${id}`, { method: 'PUT' });
                 if (res.ok) {
-                    alert("✅ Article Approved and Published to the public Journal!");
+                    showToast("Article Approved and Published to the public Journal!", "success");
                     loadPendingBlogs(); // Refresh the table
                 } else { showToast("Failed to approve.", "error"); }
             } catch (err) { showToast("Network error.", "error"); }
@@ -1538,7 +1560,7 @@
                // Keep ONLY normal resources (banish magazines)
                allResources = rawFiles.filter(f => f.type !== 'Kalavatika' && f.type !== 'Annual');
                
-               const isTeacher = currentUser && currentUser.role === 'teacher';
+               const isTeacher = getVerifiedRole() === 'teacher';
                
                // 🔴 2. Inject the Search Bar and the empty Grid Container
                container.innerHTML = `
@@ -1636,7 +1658,7 @@
                     return;
                 }
 
-                const isTeacher = currentUser && currentUser.role === 'teacher';
+                const isTeacher = getVerifiedRole() === 'teacher';
 
                 container.innerHTML = notices.map(n => `
                     <div class="card" style="border-left: 4px solid var(--accent);">
@@ -1677,7 +1699,7 @@
         
             const container = document.getElementById('blog-container');
             const loader = document.getElementById('blog-loader');
-            const isTeacher = currentUser && currentUser.role === 'teacher';
+            const isTeacher = getVerifiedRole() === 'teacher';
         
             try {
                 const res = await fetch(`${API_URL}/blogs`);
@@ -1804,7 +1826,7 @@
             const isTeacher = getVerifiedRole() === 'teacher';
             const isOwner = ownerId && currentUser && currentUser.name === ownerId;
             if (!currentUser || (!isTeacher && !isOwner)) {
-                alert("⛔ ACCESS DENIED: Only teachers or the original author can delete this.");
+                showToast("ACCESS DENIED: Only teachers or the original author can delete this.", "error");
                 return;
             }
             if (!confirm("⚠️ Are you sure you want to delete this? This cannot be undone.")) return;
@@ -1845,8 +1867,8 @@
                     <tbody>
                         ${students.map(s => `
                             <tr>
-                                <td style="color: var(--text-main);">${s.name}</td>
-                                <td>${s.rollNumber}</td>
+                                <td style="color: var(--text-main);">${sanitize(s.name)}</td>
+                                <td>${sanitize(s.rollNumber)}</td>
                                 <td><button onclick="approveStudent('${s._id}')" class="btn btn-sm btn-success">✅ Approve</button></td>
                             </tr>
                         `).join('')}
@@ -1859,7 +1881,7 @@
             try {
                 const res = await fetch(`${API_URL}/students/approve/${id}`, { method: 'PUT' });
                 if (res.ok) {
-                    alert("✅ Student Approved!");
+                    showToast("Student Approved!", "success");
                     loadPendingStudents(); 
                 } else { showToast("Failed to approve.", "error"); }
             } catch (err) { showToast("Network error.", "error"); }
@@ -1885,7 +1907,7 @@
                     return;
                 }
 
-                const isTeacher = currentUser && currentUser.role === 'teacher';
+                const isTeacher = getVerifiedRole() === 'teacher';
 
                 container.innerHTML = posts.map(p => `
                 <div class="card" style="margin-bottom: 2rem; padding: 0; overflow: hidden;">
@@ -1934,6 +1956,9 @@
         async function handleProfileUpdate(e) {
             e.preventDefault();
             const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            setLoading(submitBtn, true);
+
             const formData = new FormData();
             
             if (form.qualifications.value) formData.append('qualifications', form.qualifications.value);
@@ -1960,13 +1985,15 @@
                     currentUser = { ...currentUser, ...updatedUser };
                     localStorage.setItem('physicaUser', JSON.stringify(currentUser));
                     
-                    alert("✅ Profile Updated Successfully!");
+                    showToast("Profile Updated Successfully!", "success");
                     navigate('faculty'); // Instantly take them to the Faculty page to see it!
                 } else {
                     showToast("Failed to update profile.", "error");
                 }
             } catch (err) {
-                alert("Server Error.");
+                showToast("Server Error.", "error");
+            } finally {
+                setLoading(submitBtn, false);
             }
         }
         async function renderGallery() {
@@ -2009,7 +2036,7 @@
                    <polyline points="12 19 5 12 12 5"></polyline>
                 </svg>
                 Back </button>
-                    ${currentUser && currentUser.role === 'teacher' ? `
+                    ${getVerifiedRole() === 'teacher' ? `
 <button class="btn btn-sm" style="background: var(--warning); color: black; font-weight: bold; display: flex; align-items: center; gap: 6px;" onclick="editCategory('${highlightId}', '${highlightTitle}')">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -2035,7 +2062,7 @@
                     return;
                 }
 
-                const isTeacher = currentUser && currentUser.role === 'teacher';
+                const isTeacher = getVerifiedRole() === 'teacher';
 
                 container.innerHTML = posts.map(p => {
                     // Cache post data so onclick doesn't break on quotes in title/caption
@@ -2135,7 +2162,7 @@
                 });
                 
                 if (res.ok) {
-                    alert("✅ New Category Created!");
+                    showToast("New Category Created!", "success");
                     e.target.reset();
                     loadHighlightsDropdown('t-highlight-select'); // Instantly update the dropdown
                 } else { showToast("Failed — category may already exist.", "error"); }
@@ -2193,7 +2220,7 @@
                 });
                 
                 if (res.ok) {
-                    alert("✅ Category Renamed!");
+                    showToast("Category Renamed!", "success");
                     navigate('gallery'); // Refresh gallery to see the new name
                 } else { showToast("Failed to rename category.", "error"); }
             } catch (err) { showToast("Network error — check your connection.", "error"); }
@@ -2222,7 +2249,7 @@
                 });
                 
                 if (res.ok) {
-                    alert("✅ Album Updated Successfully!");
+                    showToast("Album Updated Successfully!", "success");
                     // Refresh the current album page to show changes instantly
                     renderHighlightPosts(highlightId, highlightTitle); 
                 } else { showToast("Album update failed.", "error"); }
@@ -2257,7 +2284,7 @@
                 return;
             }
 
-            const isTeacher = currentUser && currentUser.role === 'teacher';
+            const isTeacher = getVerifiedRole() === 'teacher';
 
             container.innerHTML = posts.map(p => {
                 // Render multiple images if they exist
@@ -2313,6 +2340,9 @@
     //  TEACHER DASHBOARD: SLIDER MANAGER
     async function uploadCarouselSlide(e) {
         e.preventDefault();
+        const submitBtn = document.querySelector('#carouselForm button[type="submit"]');
+        setLoading(submitBtn, true);
+
         const title = document.getElementById('carouselTitle').value;
         const imageFile = document.getElementById('carouselImage').files[0];
 
@@ -2329,14 +2359,16 @@
             });
 
             if (response.ok) {
-                alert('✅ Success! Image is now live on the homepage.');
+                showToast('Success! Image is now live on the homepage.', 'success');
                 document.getElementById('carouselForm').reset(); // 🔴 Fixed!
             } else {
-                alert('❌ Failed to upload image.');
+                showToast('Failed to upload image.', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('⚠️ Server connection error.');
+            showToast('Server connection error.', 'error');
+        } finally {
+            setLoading(submitBtn, false);
         }
     }
 
@@ -2358,7 +2390,7 @@
             }
 
             //  Check if the current user is a logged-in Teacher
-            const isTeacher = currentUser && currentUser.role === 'teacher';
+            const isTeacher = getVerifiedRole() === 'teacher';
 
             slides.forEach(slide => {
                 //  DIRECT CLOUDINARY URL
@@ -2427,7 +2459,7 @@ async function handleAchievement(e) {
             formData.append('photos', photoInput.files[i]);
         }
     } else {
-        alert("Please select at least one photo.");
+        showToast("Please select at least one photo.", "error");
         return;
     }
 

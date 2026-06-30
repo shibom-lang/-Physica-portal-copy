@@ -66,6 +66,7 @@ router.post('/login', async (req, res) => {
             designation: user.designation,
             qualifications: user.qualifications,
             bio: user.bio,
+            attendance: user.attendance,
             token // 🔑 Send token to frontend
         });
 
