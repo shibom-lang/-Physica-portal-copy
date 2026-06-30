@@ -18,7 +18,12 @@ const allowedOrigins = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000',
-    'https://your-physica-domain.com' // ← replace with your real production URL
+    // ⬇️ ============================================================
+    // 🚂 RAILWAY URL — paste your Railway domain here
+    // Go to: Railway Dashboard → your project → Settings → Domains
+    // It looks like: https://physica-portal-production.up.railway.app
+    // ===============================================================
+    'https://YOUR-APP-NAME.up.railway.app' // ← 🚂 REPLACE THIS with your Railway URL
 ];
 
 const io = new Server(server, { cors: { origin: allowedOrigins } });
