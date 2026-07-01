@@ -1,4 +1,4 @@
-# ⚛️ Physica Portal
+#  Physica Portal
 
 <div align="center">
 
