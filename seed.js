@@ -21,8 +21,8 @@ mongoose.connect(process.env.MONGODB_URI)
             role: "teacher",
             status: "approved", 
             name: "Dr. Physics",
-            designation: "Professor",
-            attendance: { jan: { attended: 0, total: 0 } }
+            designation: "Professor"
+            // The old hardcoded attendance block is completely removed
         });
 
         // 3. Create a STUDENT
@@ -32,8 +32,8 @@ mongoose.connect(process.env.MONGODB_URI)
             role: "student",
             status: "pending", 
             name: "Rahul Sharma",
-            semester: "4th Semester",
-            attendance: { jan: { attended: 20, total: 25 }, feb: { attended: 18, total: 24 } }
+            semester: "4th Semester"
+            // The old hardcoded attendance block is completely removed
         });
 
         console.log("✅ Live Cloud Users Created with Encrypted Passwords!");
